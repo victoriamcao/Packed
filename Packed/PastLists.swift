@@ -21,7 +21,7 @@ struct PastLists: View {
             Spacer()
             
             Button(action: {
-                // Add navigation or action here
+               
             }) {
                 Text("Go Home")
                     .font(.headline)

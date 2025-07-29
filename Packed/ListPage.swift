@@ -8,7 +8,7 @@ struct ListPage: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Title
+            
             TextField("Vacation Name", text: $vacationName)
                 .padding([.top, .leading, .bottom])
                 .font(.largeTitle)
@@ -16,7 +16,7 @@ struct ListPage: View {
 
             Divider()
 
-            // Scrollable item list
+         
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(itemList, id: \.self) { item in
@@ -29,7 +29,7 @@ struct ListPage: View {
             }
             .frame(maxHeight: .infinity)
 
-            // Add item section with top border
+            
             HStack {
                 TextField("Item Name", text: $newItem)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -59,11 +59,11 @@ struct ListPage: View {
                 alignment: .top
             )
 
-            // Collapsible Home Button
+          
             VStack(spacing: 0) {
                 if showHomeButton {
                     Button(action: {
-                        // Navigation goes here
+                        
                     }) {
                         Text("Go Home")
                             .font(.headline)
@@ -77,7 +77,7 @@ struct ListPage: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
-                // Toggle arrow
+                
                 Button(action: {
                     withAnimation {
                         showHomeButton.toggle()
