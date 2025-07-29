@@ -9,7 +9,6 @@ import SwiftUI
 
 struct ListPage: View {
     var body: some View {
-        Text("hi")
     }
 }
 
