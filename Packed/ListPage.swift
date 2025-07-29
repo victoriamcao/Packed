@@ -1,16 +1,10 @@
-//
-//  ListPage.swift
-//  Packed
-//
-//  Created by Scholar on 7/29/25.
-//
-
 import SwiftUI
 struct ListPage: View {
     @State private var vacationName: String = ""
     @State private var newItem: String = ""
     @State private var itemList: [String] = []
     @State private var showHomeButton: Bool = false
+
     var body: some View {
         VStack(spacing: 0) {
             
@@ -18,7 +12,9 @@ struct ListPage: View {
                 .padding([.top, .leading, .bottom])
                 .font(.largeTitle)
                 .multilineTextAlignment(.center)
+
             Divider()
+
          
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
@@ -31,11 +27,13 @@ struct ListPage: View {
                 .padding(.top, 10)
             }
             .frame(maxHeight: .infinity)
+
             
             HStack {
                 TextField("Item Name", text: $newItem)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.leading)
+
                 Button(action: {
                     if !newItem.trimmingCharacters(in: .whitespaces).isEmpty {
                         itemList.append(newItem)
@@ -59,6 +57,7 @@ struct ListPage: View {
                     .foregroundColor(Color.gray.opacity(0.4)),
                 alignment: .top
             )
+
           
             VStack(spacing: 0) {
                 if showHomeButton {
@@ -76,6 +75,7 @@ struct ListPage: View {
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
+
                 
                 Button(action: {
                     withAnimation {
