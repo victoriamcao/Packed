@@ -5,22 +5,13 @@
 //  Created by Scholar on 7/29/25.
 //
 
+//This is the homepage
+
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-           
-            Text("change 1")
-            Text("Change 2 again again")
-            Text("Change 2 dhriti")
-            Text("Change 3")
-            Text("Change 4 Vivian")
-            Text("Change 4")
         }
         .padding()
     }
