@@ -16,6 +16,7 @@ struct ContentView: View {
             Text("Hello, world!")
             Text("change 1")
             Text("Change 2 again again")
+            Text("Change 2 dhriti")
         }
         .padding()
     }
