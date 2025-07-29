@@ -1,19 +1,14 @@
-//
-//  ListPage.swift
-//  Packed
-//
-//  Created by Scholar on 7/29/25.
-//
-
 import SwiftUI
 
 struct ListPage: View {
     @State private var vacationName: String = ""
     @State private var newItem: String = ""
     @State private var itemList: [String] = []
+    @State private var showHomeButton: Bool = false
 
     var body: some View {
-        VStack(alignment: .center) {
+        VStack(spacing: 0) {
+            // Title
             TextField("Vacation Name", text: $vacationName)
                 .padding([.top, .leading, .bottom])
                 .font(.largeTitle)
@@ -21,25 +16,24 @@ struct ListPage: View {
 
             Divider()
 
-            if !itemList.isEmpty {
-                List {
+            // Scrollable item list
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
                     ForEach(itemList, id: \.self) { item in
                         Text("• \(item)")
+                            .padding(.horizontal)
                     }
-                    .onDelete(perform: deleteItem)
                 }
-                .listStyle(PlainListStyle())
-                .scrollContentBackground(.hidden)
-                .background(Color.clear)
-                .frame(maxHeight: 250)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 10)
             }
+            .frame(maxHeight: .infinity)
 
-            Spacer()
-
+            // Add item section with top border
             HStack {
                 TextField("Item Name", text: $newItem)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
+                    .padding(.leading)
 
                 Button(action: {
                     if !newItem.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -50,18 +44,53 @@ struct ListPage: View {
                     Text("Add")
                         .padding(.horizontal)
                         .padding(.vertical, 8)
-                        .background(Color.blue)
+                        .background(Color("lightBlue"))
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
                 .padding(.trailing)
             }
-        }
-        .padding()
-    }
+            .padding(.vertical, 12)
+            .background(Color.white)
+            .overlay(
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.gray.opacity(0.4)),
+                alignment: .top
+            )
 
-    private func deleteItem(at offsets: IndexSet) {
-        itemList.remove(atOffsets: offsets)
+            // Collapsible Home Button
+            VStack(spacing: 0) {
+                if showHomeButton {
+                    Button(action: {
+                        // Navigation goes here
+                    }) {
+                        Text("Go Home")
+                            .font(.headline)
+                            .padding(.vertical, 14)
+                            .frame(maxWidth: .infinity)
+                            .background(Color("lightBlue"))
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .padding(.horizontal)
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                // Toggle arrow
+                Button(action: {
+                    withAnimation {
+                        showHomeButton.toggle()
+                    }
+                }) {
+                    Image(systemName: showHomeButton ? "chevron.down" : "chevron.up")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 10)
+                }
+            }
+        }
+        .padding(.top)
     }
 }
 
