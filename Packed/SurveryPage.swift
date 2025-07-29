@@ -16,13 +16,14 @@ struct SurveryPage: View {
     var body: some View {
         NavigationStack {
             VStack {
-                Spacer()
                 Text("Create New List")
                     .font(.largeTitle)
                     .fontWeight(.semibold)
                     .foregroundColor(Color(red: 0.195, green: 0.648, blue: 0.859))
-                    .padding(.vertical, 50.0)
+                    .padding(.top, 75.0)
+                    .padding(.bottom, 35.0)
                 
+                Spacer()
                 // Type of Vacation button
                 Text("TYPE OF VACATION")
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
@@ -59,7 +60,7 @@ struct SurveryPage: View {
                             }
                         )
                     }
-                    .padding()
+                    .padding(.top, 8.0)
                 }
                 .padding(.bottom)
                 // Type of Vacation button
@@ -98,7 +99,7 @@ struct SurveryPage: View {
                             }
                         )
                     }
-                    .padding()
+                    .padding(.top, 8.0)
                 }
                 .padding(.bottom)
                 
@@ -148,7 +149,8 @@ struct SurveryPage: View {
                             }
                         )
                     }
-                    .padding()
+                    .padding(.top, 8.0)
+
                 }
                 .padding(.bottom)
                 
@@ -181,10 +183,13 @@ struct SurveryPage: View {
                                     .frame(width: 37, height: 30)
                             }
                         )
+                        .padding(.top, 8.0)
+
                     }
-                    .padding()
+                    .padding(.bottom)
                 }
                 
+                Spacer()
                 NavigationLink(destination: ListPage()) {
                     ZStack {
                         Rectangle()
