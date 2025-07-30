@@ -13,18 +13,16 @@ struct ContentView: View {
     var body: some View {
         NavigationStack{
             ZStack{
-                Image("Screenshot 2025-07-29 at 1.56.15 PM")
-                    .resizable(resizingMode: .stretch)
-                    .aspectRatio(contentMode: .fill)
-                    
+               
                    
                 VStack {
                     // Spacer()
                     
                     Text("PACKED")
                         .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .fontWeight(.medium)
                         .foregroundColor(Color("darkBlue"))
+                        .offset(y: -100)
                         
                     
                     //  Spacer()
@@ -32,33 +30,42 @@ struct ContentView: View {
                         .resizable(resizingMode: .tile)
                         .aspectRatio(contentMode: .fit)*/
                     NavigationLink(destination: SurveryPage()) {
-                        Text("Make a List")
-                            .font(.title2)
+                        Text("Create Packing List")
+                            .font(.title)
                             .foregroundColor(Color.white)
-                    }
+                    }//Navlink
                     
-                    .frame(maxWidth: .infinity, minHeight: 70)
+                    .frame(maxWidth: 350, minHeight: 80)
                     .background(Color("lightBlue"))
                     .foregroundColor(.white)
-                    .cornerRadius(20)
+                    .cornerRadius(30)
                     
                     
                     NavigationLink(destination: SurveryPage()){
                         Text("View Past Lists")
                             .foregroundColor(Color("textGray"))//remember to change link to past lists
                         
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 50)
+                    }//Navlink
+                    .frame(maxWidth: 350, minHeight: 50)
                     .background(Color("buttonGray"))
                     // .foregroundColor(.white)
-                    .cornerRadius(15)
-                }
+                    .cornerRadius(20)
+                }//VStack
                 .padding()
-                .padding()
-            }
-        }
-    }
-}
+                .padding(.horizontal)
+                Image("plane 1")
+                    .resizable()
+                           .aspectRatio(contentMode: .fit)
+                           .frame(width: 440) // adjust size
+                           .offset(y: 230)
+                           .offset(x: -50)
+                           .rotationEffect(.degrees(-8)) // rotates the image counterclockwise
+
+                    
+            }//ZStack
+        }//navStack
+    }//body
+}//struct
 
 #Preview {
     ContentView()
