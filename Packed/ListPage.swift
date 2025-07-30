@@ -1,17 +1,17 @@
 import SwiftUI
 
 struct ListPage: View {
-    
     var selectedType: String
     var selectedGender: String
     var selectedWeather: String
     var selectedLength: Int
-    
-    
+
     @State private var vacationName: String = ""
     @State private var newItem: String = ""
     @State private var itemList: [String] = []
     @State private var showHomeButton: Bool = false
+
+    @Environment(\.dismiss) var dismiss
 
     var body: some View {
         NavigationStack {
@@ -21,19 +21,20 @@ struct ListPage: View {
                 weather: selectedWeather,
                 length: selectedLength
             )
-            VStack {
-                
+
+            VStack(spacing: 0) {
+                // Vacation Name field
                 TextField("Vacation Name", text: $vacationName)
                     .padding([.top, .leading, .bottom])
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
-                
+
                 Divider()
-                
-                
+
+                // Scrollable list of items
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
-                        ForEach(packingItems + itemList, id: \ .self) { item in
+                        ForEach(packingItems + itemList, id: \.self) { item in
                             Text("• \(item)")
                                 .padding(.horizontal)
                         }
@@ -42,13 +43,12 @@ struct ListPage: View {
                     .padding(.top, 10)
                 }
                 .frame(maxHeight: .infinity)
-                
-                
+
+                // Add item section
                 HStack {
                     TextField("Item Name", text: $newItem)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding(.leading)
-                    
                     Button(action: {
                         if !newItem.trimmingCharacters(in: .whitespaces).isEmpty {
                             itemList.append(newItem)
@@ -72,25 +72,24 @@ struct ListPage: View {
                         .foregroundColor(Color.gray.opacity(0.4)),
                     alignment: .top
                 )
-                
-                
+
+                // Home button section (collapsible)
                 VStack(spacing: 0) {
                     if showHomeButton {
-                        NavigationLink(destination: ContentView())
-                        {
-                        Text("Go Home")
-                            .font(.headline)
-                            .padding(.vertical, 14)
-                            .frame(maxWidth: .infinity)
-                            .background(Color("lightBlue"))
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .padding(.horizontal)
+                        NavigationLink(destination: ContentView()) {
+                            Text("Go Home")
+                                .font(.headline)
+                                .padding(.vertical, 14)
+                                .frame(maxWidth: .infinity)
+                                .background(Color("lightBlue"))
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                                .padding(.horizontal)
                         }
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    
-                    
+
+                    // Toggle button for showing/hiding Go Home
                     Button(action: {
                         withAnimation {
                             showHomeButton.toggle()
@@ -116,3 +115,5 @@ struct ListPage: View {
         selectedLength: 3
     )
 }
+
+
