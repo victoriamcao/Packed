@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct ListPage: View {
     var selectedType: String
     var selectedGender: String
@@ -7,22 +8,19 @@ struct ListPage: View {
 
     @State private var vacationName: String = ""
     @State private var newItem: String = ""
-    @State private var itemList: [String] = []
     @State private var showHomeButton: Bool = false
+    @State private var items: [PackingItem] = []
 
     @Environment(\.dismiss) var dismiss
 
+    // Grouping logic
+    var groupedItems: [String: [Binding<PackingItem>]] {
+        Dictionary(grouping: $items, by: { $0.category.wrappedValue })
+    }
+
     var body: some View {
         NavigationStack {
-            let packingItems = ListItems.generatePackingList(
-                type: selectedType,
-                gender: selectedGender,
-                weather: selectedWeather,
-                length: selectedLength
-            )
-
             VStack(spacing: 0) {
-                // Vacation Name field
                 TextField("Vacation Name", text: $vacationName)
                     .padding([.top, .leading, .bottom])
                     .font(.largeTitle)
@@ -30,28 +28,48 @@ struct ListPage: View {
 
                 Divider()
 
-                // Scrollable list of items
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(packingItems + itemList, id: \.self) { item in
-                            Text("• \(item)")
-                                .font(.headline)
-                                .padding(.horizontal)
+                    LazyVStack(alignm3ent: .leading, spacing: 20) {
+                        ForEach(groupedItems.keys.sorted(), id: \.self) { category in
+                            Section(header:
+                                Text(category)
+                                    .font(.headline)
+                                    .padding(.horizontal)
+                            ) {
+                                ForEach(groupedItems[category]!) { $item in
+                                    Button(action: {
+                                        item.isPacked.toggle()
+                                    }) {
+                                        HStack {
+                                            Text(item.isPacked ? "☒" : "☐")
+                                                .font(.title1)
+                                                .foregroundColor(item.isPacked ? .blue : .gray)
+                                            Text(item.name)
+                                                .foregroundColor(item.isPacked ? .gray : .primary)
+                                                .strikethrough(item.isPacked, color: .gray)
+                                        }
+                                        .padding(.horizontal)
+                                        .padding(.vertical, 0)
+                                        .background(Color.white)
+                                        .cornerRadius(8)
+                                    }
+                                }
+                            }
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 10)
+                    .padding(.top)
                 }
-                .frame(maxHeight: .infinity)
 
-                // Add item section
+
+                // Add new item manually
                 HStack {
                     TextField("Item Name", text: $newItem)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding(.leading)
                     Button(action: {
-                        if !newItem.trimmingCharacters(in: .whitespaces).isEmpty {
-                            itemList.append(newItem)
+                        let trimmed = newItem.trimmingCharacters(in: .whitespaces)
+                        if !trimmed.isEmpty {
+                            items.append(PackingItem(name: trimmed, category: "Added by You"))
                             newItem = ""
                         }
                     }) {
@@ -73,7 +91,7 @@ struct ListPage: View {
                     alignment: .top
                 )
 
-                // Home button section (collapsible)
+                // Go Home button
                 VStack(spacing: 0) {
                     if showHomeButton {
                         NavigationLink(destination: ContentView()) {
@@ -89,7 +107,6 @@ struct ListPage: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
 
-                    // Toggle button for showing/hiding Go Home
                     Button(action: {
                         withAnimation {
                             showHomeButton.toggle()
@@ -103,9 +120,22 @@ struct ListPage: View {
                 }
             }
             .padding(.top)
+            .onAppear {
+                if items.isEmpty {
+                    items = ListItems.generatePackingList(
+                        type: selectedType,
+                        gender: selectedGender,
+                        weather: selectedWeather,
+                        length: selectedLength
+                    )
+                }
+            }
         }
     }
 }
+
+
+
 #Preview {
     ListPage(
         selectedType: "Tropical Vacation",
