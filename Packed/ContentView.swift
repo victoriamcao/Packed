@@ -41,7 +41,7 @@ struct ContentView: View {
                     .cornerRadius(30)
                     
                     
-                    NavigationLink(destination: SurveryPage()){
+                    NavigationLink(destination: PastLists()){
                         Text("View Past Lists")
                             .foregroundColor(Color("textGray"))//remember to change link to past lists
                         
