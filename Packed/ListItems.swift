@@ -18,34 +18,124 @@ class ListItems {
 
             // Essentials
             items.append(contentsOf: [
+                "Passport/ID",
                 "Toothbrush",
                 "Toothpaste",
-                "Phone charger",
-                "Socks",
-                "Undergarments",
-                "Passport/ID",
-                "Wallet"
+                "Electronic device chargers",
+                "Skincare essentials",
+                "Shampoo, conditioner, and body wash",
+                "Deodorant",
+                "Water bottle",
+                "Underwear and socks",
+                "Accessories",
+                "Pajamas",
+                "Dirty laundry bag",
+                "Electronic devices"
             ])
+            
+            // Essentials by gender
+            if gender == "Female" {
+                items.append(contentsOf: [
+                    "Makeup bag",
+                    "Female hygiene products",
+                    "Jewelry",
+                    "Heat-based hair styling tools",
+                    "Purse"
+                ])
+            } else if gender == "Male" {
+                items.append(contentsOf: [
+                    "Shaving kit",
+                    "Hair gel",
+                    "Wallet"
+                ])
+            } else {
+                items.append(contentsOf: [
+                    "Accessories",
+                    "Hair products"
+                ])
+            }
+
+            
 
             // Clothing (simplified)
             if weather == "Sunny" {
                 items.append(contentsOf: ["Sunglasses", "Sunscreen", "Hat"])
             } else if weather == "Rainy" {
                 items.append(contentsOf: ["Raincoat", "Umbrella", "Waterproof shoes"])
-            } else if weather == "Cold" || type == "Ski Trip" {
+            } else if weather == "Cloudy" {
                 items.append(contentsOf: ["Jacket", "Gloves", "Thermals", "Beanie"])
             }
 
             if type == "Business Trip" {
-                items.append(contentsOf: ["Blazer", "Business Shoes", "Notebook"])
+                items.append(contentsOf: [
+                    "Business casual attire",
+                    "Blazer and suit",
+                    "Dress shoes / Loafers",
+                    "Laptop bag",
+                    "Dress shirt"
+                ])
+                if gender == "Female" {
+                    items.append(contentsOf: [
+                        "Flats / Heels",
+                        "Pencil skirt"
+                    ])
+                }
             } else if type == "Mountain Vacation" {
-                items.append(contentsOf: ["Hiking boots", "Backpack", "Bug spray"])
-            }
-
-            if gender == "Female" {
-                items.append("Makeup bag")
-            } else if gender == "Male" {
-                items.append("Shaving kit")
+                items.append(contentsOf: [
+                    "Hiking boots",
+                    "Fleece or thermal jacket",
+                    "Windbreaker / Rain jacket",
+                    "Beanie",
+                    "Gloves",
+                    "Backpack",
+                    "Bug spray"
+                ])
+                if gender == "Female" {
+                    items.append("Leggings")
+                }
+            } else if type == "Tropical Vacation" {
+                items.append(contentsOf: [
+                    "Swimsuits",
+                    "Flip-flops / Sandals",
+                    "Shorts",
+                    "Tank tops"
+                ])
+                if gender == "Female" {
+                    items.append(contentsOf: [
+                        "Cover-ups",
+                        "Sundresses"
+                    ])
+                }
+            } else if type == "City Vacation" {
+                items.append(contentsOf: [
+                    "Jeans",
+                    "Sneakers",
+                    "Formal dinner attire",
+                    "Scarf"
+                ])
+                if gender == "Female" {
+                    items.append("Blouses")
+                } else if gender == "Male" {
+                    items.append("Polos")
+                }
+            } else if type == "Ski Trip" {
+                items.append(contentsOf: [
+                    "Ski jacket",
+                    "Ski pants",
+                    "Thermal base layers",
+                    "Ski gloves",
+                    "Neck warmer",
+                    "Beanie",
+                    "Ski goggles",
+                    "Snow boots",
+                    "Helmet",
+                    "Sweaters",
+                    "Jeans",
+                    "Warm coat",
+                    "Indoor shoes",
+                    "Scarf",
+                    "Hand/Foot warmers",
+                ])
             }
 
             // Adjust for length

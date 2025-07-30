@@ -82,6 +82,9 @@ struct SurveryPage: View {
                     Button(action: { selectedWeather = "Windy" }) {
                         Text("Windy")
                     }
+                    Button(action: { selectedWeather = "Snowy" }) {
+                        Text("Snowy")
+                    }
                 } label: {
                     ZStack {
                         Rectangle()
