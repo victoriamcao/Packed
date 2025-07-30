@@ -10,8 +10,20 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var isLoggedIn = false
+    @StateObject var userData = UserData()
+
     var body: some View {
         NavigationStack{
+            NavigationLink(destination: LoginChoiceView(userData: userData)) {
+                    Image(systemName: "person.circle")
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                        .padding()
+                Spacer()
+                               }
+            
+           
             ZStack{
                
                    
