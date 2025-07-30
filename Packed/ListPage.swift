@@ -5,18 +5,20 @@ struct ListPage: View {
     @State private var newItem: String = ""
     @State private var itemList: [String] = []
     @State private var showHomeButton: Bool = false
+    @Environment(\.dismiss) var dismiss  // This lets us go back to ContentView
 
     var body: some View {
         VStack(spacing: 0) {
             
+            // Vacation Name field
             TextField("Vacation Name", text: $vacationName)
                 .padding([.top, .leading, .bottom])
                 .font(.largeTitle)
                 .multilineTextAlignment(.center)
-
+            
             Divider()
-
-         
+            
+            // Scrollable list of items
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(itemList, id: \.self) { item in
@@ -28,8 +30,8 @@ struct ListPage: View {
                 .padding(.top, 10)
             }
             .frame(maxHeight: .infinity)
-
             
+            // Add item section
             HStack {
                 TextField("Item Name", text: $newItem)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -58,12 +60,12 @@ struct ListPage: View {
                     .foregroundColor(Color.gray.opacity(0.4)),
                 alignment: .top
             )
-
-          
+            
+            // Home button section (collapsible)
             VStack(spacing: 0) {
                 if showHomeButton {
                     Button(action: {
-                        
+                        dismiss()  // This sends the user back to ContentView
                     }) {
                         Text("Go Home")
                             .font(.headline)
@@ -76,8 +78,8 @@ struct ListPage: View {
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-
                 
+                // Toggle button for showing/hiding Go Home
                 Button(action: {
                     withAnimation {
                         showHomeButton.toggle()
