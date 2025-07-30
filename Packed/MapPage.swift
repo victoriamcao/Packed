@@ -1,156 +1,122 @@
-//
-//  MapPage.swift
-//  Packed
-//
-//  Created by Scholar on 7/29/25.
-//
-
 import SwiftUI
 import MapKit
 
 struct MapPage: View {
     @State private var pins: [Pin] = []
     @State private var selectedCoordinate: CLLocationCoordinate2D?
-    @State private var showingImagePicker = false
     @State private var pickedImage: UIImage?
-    
+    @State private var showingImagePicker = false
     @State private var showingConfirmImage = false
-    @State private var selectedPinForPreview: Pin? = nil
-    
-    @State private var debugMessage = ""
-    @State private var showDebug = false
-    
+    @State private var selectedPinForPreview: Pin?
+
     var body: some View {
-        NavigationView {
-            ZStack {
-                MapView(pins: $pins, onTap: { coordinate in
-                    debugMessage = "Tapped at: \(coordinate.latitude), \(coordinate.longitude)"
-                    print(debugMessage) // Console logging
-                    selectedCoordinate = coordinate
-                    showingImagePicker = true
-                }, onAnnotationTap: { pin in
-                    debugMessage = "Annotation tapped for pin: \(pin.id)"
-                    print(debugMessage) // Console logging
-                    selectedPinForPreview = pin
-                })
-                .edgesIgnoringSafeArea(.all)
-                
-                // Debug overlay (optional - you can remove this later)
-                if showDebug {
-                    VStack {
-                        Spacer()
-                        Text(debugMessage)
-                            .padding()
-                            .background(Color.black.opacity(0.7))
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                            .padding()
+        ZStack {
+            MapView(
+                pins: $pins,
+                onTap: { coordinate in
+                    if let existingPin = pins.first(where: {
+                        abs($0.coordinate.latitude - coordinate.latitude) < 0.0005 &&
+                        abs($0.coordinate.longitude - coordinate.longitude) < 0.0005
+                    }) {
+                        // Show preview for existing pin
+                        selectedPinForPreview = existingPin
+                    } else {
+                        // Create a new pin with empty images, add it to pins array so it has an ID
+                        let newPin = Pin(coordinate: coordinate, images: [])
+                        pins.append(newPin)
+                        selectedPinForPreview = newPin
                     }
+                },
+                onAnnotationTap: { pin in
+                    selectedPinForPreview = pin
                 }
-                
-                // Add pins counter in top corner
-                VStack {
-                    HStack {
-                        Text("Pins: \(pins.count)")
-                            .padding(8)
-                            .background(Color.black.opacity(0.7))
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                        Spacer()
-                        Button("Debug") {
-                            showDebug.toggle()
-                        }
+            )
+            .edgesIgnoringSafeArea(.all)
+
+            VStack {
+                HStack {
+                    Text("Pins: \(pins.count)")
                         .padding(8)
-                        .background(Color.blue)
+                        .background(Color.black.opacity(0.7))
                         .foregroundColor(.white)
                         .cornerRadius(8)
-                    }
-                    .padding()
                     Spacer()
                 }
+                .padding()
+                Spacer()
             }
-            .navigationTitle("Outfit Map")
-            .navigationBarTitleDisplayMode(.inline)
         }
-        // Pick an image when dropping pin
+        // Image picker sheet
         .sheet(isPresented: $showingImagePicker) {
             ImagePicker(image: $pickedImage)
         }
-        // Confirm the image before adding pin
+        // Confirm image sheet
         .sheet(isPresented: $showingConfirmImage) {
             if let image = pickedImage {
-                VStack(spacing: 20) {
-                    Text("Confirm your photo")
-                        .font(.headline)
-                        .padding()
-                    
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxHeight: 300)
-                        .cornerRadius(12)
-                        .padding()
-                    
-                    if let coordinate = selectedCoordinate {
-                        Text("Location: \(coordinate.latitude, specifier: "%.4f"), \(coordinate.longitude, specifier: "%.4f")")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack(spacing: 20) {
-                        Button("Cancel") {
-                            pickedImage = nil
-                            selectedCoordinate = nil
-                            showingConfirmImage = false
-                        }
-                        .foregroundStyle(.red)
-                        .padding()
-                        .background(Color.red.opacity(0.1))
-                        .cornerRadius(8)
-                        
-                        Button("Add Pin") {
-                            addPinWithImage()
-                        }
-                        .foregroundStyle(.blue)
-                        .padding()
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(8)
-                    }
-                    .padding(.horizontal)
-                }
-                .padding()
-            }
-        }
-        // Preview pin image when tapped
-        .sheet(item: $selectedPinForPreview) { pin in
-            NavigationView {
-                VStack {
-                    if let image = pin.image {
+                ZStack {
+                    Color.white.ignoresSafeArea()
+
+                    VStack {
+                        Text("Confirm your photo")
+                            .font(.headline)
+                            .padding()
+
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFit()
-                            .cornerRadius(12)
+                            .frame(maxHeight: 300)
                             .padding()
-                    } else {
-                        Text("No image available")
-                            .foregroundColor(.gray)
-                            .font(.title2)
+
+                        HStack {
+                            Button("Cancel") {
+                                pickedImage = nil
+                                showingConfirmImage = false
+                            }
+                            .padding()
+
+                            Spacer()
+
+                            Button("Confirm") {
+                                addPinWithImage()
+                                showingConfirmImage = false
+                            }
+                            .padding()
+                        }
+                        .padding(.horizontal)
                     }
-                    
-                    Text("Added: \(pin.timestamp, style: .date)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
                 }
-                .navigationTitle("Outfit Pin")
-                .navigationBarTitleDisplayMode(.inline)
-                .navigationBarItems(trailing: Button("Close") {
-                    selectedPinForPreview = nil
-                })
             }
         }
-        // When image picked, show confirm sheet
+        // Pin photo preview sheet
+        .sheet(item: $selectedPinForPreview) { pin in
+            ScrollView {
+                VStack {
+                    Text("Photos at Location")
+                        .font(.headline)
+                        .padding()
+
+                    if pin.images.isEmpty {
+                        Text("No photos yet.")
+                            .foregroundColor(.gray)
+                    } else {
+                        ForEach(pin.images.indices, id: \.self) { index in
+                            Image(uiImage: pin.images[index])
+                                .resizable()
+                                .scaledToFit()
+                                .padding()
+                        }
+                    }
+
+                    Button("Add Photo") {
+                        selectedCoordinate = pin.coordinate
+                        selectedPinForPreview = nil // Close preview before showing picker
+                        showingImagePicker = true
+                    }
+                    .padding()
+                }
+            }
+        }
+        // When user picks an image, go to confirmation sheet
         .onChange(of: pickedImage) { newValue in
             if newValue != nil {
                 showingConfirmImage = true
@@ -158,24 +124,25 @@ struct MapPage: View {
             }
         }
     }
-    
+
     private func addPinWithImage() {
-        guard let coordinate = selectedCoordinate, let image = pickedImage else {
-            debugMessage = "Error: Missing coordinate or image"
-            print(debugMessage)
-            return
+        guard let coordinate = selectedCoordinate, let image = pickedImage else { return }
+
+        if let index = pins.firstIndex(where: {
+            abs($0.coordinate.latitude - coordinate.latitude) < 0.0005 &&
+            abs($0.coordinate.longitude - coordinate.longitude) < 0.0005
+        }) {
+            pins[index].images.append(image)  // Append new image
+            selectedPinForPreview = pins[index]
+        } else {
+            // Should not happen since new pins created on tap already
+            let newPin = Pin(coordinate: coordinate, images: [image])
+            pins.append(newPin)
+            selectedPinForPreview = newPin
         }
-        
-        let newPin = Pin(coordinate: coordinate, image: image)
-        pins.append(newPin)
-        
-        debugMessage = "Pin added successfully! Total pins: \(pins.count)"
-        print(debugMessage)
-        
-        // Clean up
+
         pickedImage = nil
         selectedCoordinate = nil
-        showingConfirmImage = false
     }
 }
 
