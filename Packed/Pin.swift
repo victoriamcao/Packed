@@ -7,10 +7,14 @@
 
 import Foundation
 import MapKit
-import SwiftUI
+import UIKit
 
-struct Pin: Identifiable {
+struct Pin: Identifiable, Equatable {
     let id = UUID()
     var coordinate: CLLocationCoordinate2D
     var image: UIImage?
+    
+    static func == (lhs: Pin, rhs: Pin) -> Bool {
+        lhs.id == rhs.id
+    }
 }
