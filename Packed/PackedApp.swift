@@ -1,17 +1,13 @@
-//
-//  PackedApp.swift
-//  Packed
-//
-//  Created by Scholar on 7/29/25.
-//
-
 import SwiftUI
 
 @main
 struct PackedApp: App {
+    @StateObject var savedLists = SavedLists()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(savedLists)
         }
     }
 }

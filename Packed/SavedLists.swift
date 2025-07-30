@@ -1,14 +1,5 @@
-//
-//  SavedLists.swift
-//  Packed
-//
-//  Created by Scholar on 7/30/25.
-//
+import SwiftUI
 
-import Foundation
-
-struct PackingList: Identifiable, Codable, Equatable {
-    var id = UUID()
-    var vacationName: String
-    var items: [String]
+class SavedLists: ObservableObject {
+    @Published var lists: [[String]] = []
 }

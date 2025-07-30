@@ -1,75 +1,39 @@
 import SwiftUI
 
 struct PastLists: View {
-    @State private var savedLists: [PackingList] = []
-    @State private var goHome = false
-
+    @EnvironmentObject var savedLists: SavedLists
+    
     var body: some View {
         VStack {
             Text("Past Lists")
-                .padding(.top)
                 .font(.largeTitle)
-
-            Divider()
-
-            if savedLists.isEmpty {
-                Spacer()
-                Text("No past lists yet.")
+                .foregroundColor(Color("darkBlue"))
+                .padding()
+            
+            if savedLists.lists.isEmpty {
+                Text("No saved lists yet")
                     .foregroundColor(.gray)
+                    .padding()
                 Spacer()
             } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        ForEach(savedLists) { list in
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text(list.vacationName)
-                                    .font(.headline)
-                                ForEach(list.items, id: \.self) { item in
-                                    Text("• \(item)")
-                                }
+                List {
+                    ForEach(savedLists.lists.indices, id: \.self) { index in
+                        Section(header:
+                            Text(savedLists.lists[index][0].replacingOccurrences(of: "TRIP_NAME: ", with: ""))
+                                .font(.headline)
+                        ) {
+                            ForEach(Array(savedLists.lists[index].dropFirst(4)), id: \.self) { item in
+                                Text(item)
                             }
-                            .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(10)
                         }
                     }
-                    .padding(.horizontal)
                 }
             }
-
-            Button(action: {
-                goHome = true
-            }) {
-                Text("Go Home")
-                    .font(.headline)
-                    .padding(.vertical, 12)
-                    .frame(maxWidth: .infinity)
-                    .background(Color("lightBlue"))
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            .padding(.horizontal)
-            .padding(.bottom)
-        }
-        .padding()
-        .onAppear {
-            loadSavedLists()
-        }
-        .navigationDestination(isPresented: $goHome) {
-            ContentView()
-        }
-    }
-
-    func loadSavedLists() {
-        if let data = UserDefaults.standard.data(forKey: "savedPackingLists"),
-           let decoded = try? JSONDecoder().decode([PackingList].self, from: data) {
-            savedLists = decoded
         }
     }
 }
 
 #Preview {
-    NavigationStack {
-        PastLists()
-    }
+    PastLists()
+        .environmentObject(SavedLists())
 }
