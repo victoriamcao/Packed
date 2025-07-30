@@ -7,10 +7,21 @@
 
 import Foundation
 import MapKit
-import SwiftUI
+import UIKit
+import Combine
 
-struct Pin: Identifiable {
+class Pin: Identifiable, ObservableObject, Equatable {
     let id = UUID()
-    var coordinate: CLLocationCoordinate2D
-    var image: UIImage?
+    let coordinate: CLLocationCoordinate2D
+    @Published var images: [UIImage] = []
+
+    init(coordinate: CLLocationCoordinate2D, images: [UIImage] = []) {
+        self.coordinate = coordinate
+        self.images = images
+    }
+
+    static func == (lhs: Pin, rhs: Pin) -> Bool {
+        lhs.id == rhs.id
+    }
 }
+
