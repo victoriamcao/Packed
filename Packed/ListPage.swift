@@ -29,37 +29,62 @@ struct ListPage: View {
                 Divider()
 
                 ScrollView {
-                    LazyVStack(alignm3ent: .leading, spacing: 20) {
+                    LazyVStack(alignment: .leading, spacing: 20) {
                         ForEach(groupedItems.keys.sorted(), id: \.self) { category in
-                            Section(header:
-                                Text(category)
-                                    .font(.headline)
-                                    .padding(.horizontal)
+                            Section(header: Text(category)
+                                .font(.title3)
+                                .bold()
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 16)
+                                .background(Color("lightBlue"))
+                                .cornerRadius(8)
+                                .padding(.horizontal)
                             ) {
+
                                 ForEach(groupedItems[category]!) { $item in
-                                    Button(action: {
-                                        item.isPacked.toggle()
-                                    }) {
-                                        HStack {
-                                            Text(item.isPacked ? "☒" : "☐")
-                                                .font(.title1)
-                                                .foregroundColor(item.isPacked ? .blue : .gray)
-                                            Text(item.name)
-                                                .foregroundColor(item.isPacked ? .gray : .primary)
-                                                .strikethrough(item.isPacked, color: .gray)
+                                    HStack {
+                                        // Custom square checkbox
+                                        Button(action: {
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                item.isPacked.toggle()
+                                            }
+                                        }) {
+                                            ZStack {
+                                                RoundedRectangle(cornerRadius: 4)
+                                                    .stroke(Color.gray, lineWidth: 2)
+                                                    .frame(width: 24, height: 24)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 4)
+                                                            .fill(item.isPacked ? Color("lightBlue") : Color.clear)
+                                                    )
+                                                
+                                                if item.isPacked {
+                                                    Image(systemName: "xmark")
+                                                        .font(.system(size: 14, weight: .bold))
+                                                        .foregroundColor(.white)
+                                                        .transition(.scale.combined(with: .opacity))
+                                                }
+                                            }
                                         }
-                                        .padding(.horizontal)
-                                        .padding(.vertical, 0)
-                                        .background(Color.white)
-                                        .cornerRadius(8)
+                                        .buttonStyle(PlainButtonStyle())
+                                        
+                                        Text(item.name)
+                                            .font(.body)
+                                            .strikethrough(item.isPacked, color: .gray)
+                                            .foregroundColor(item.isPacked ? .gray : .primary)
+                                            .animation(.easeInOut(duration: 0.2), value: item.isPacked)
+                                        
+                                        Spacer()
                                     }
+                                    .padding(.horizontal)
                                 }
                             }
                         }
                     }
                     .padding(.top)
                 }
-
 
                 // Add new item manually
                 HStack {
@@ -134,8 +159,6 @@ struct ListPage: View {
     }
 }
 
-
-
 #Preview {
     ListPage(
         selectedType: "Tropical Vacation",
@@ -144,5 +167,3 @@ struct ListPage: View {
         selectedLength: 3
     )
 }
-
-
