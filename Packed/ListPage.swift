@@ -35,6 +35,7 @@ struct ListPage: View {
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(packingItems + itemList, id: \.self) { item in
                             Text("• \(item)")
+                                .font(.headline)
                                 .padding(.horizontal)
                         }
                     }
