@@ -1,5 +1,4 @@
 import SwiftUI
-
 struct ListPage: View {
     var selectedType: String
     var selectedGender: String
@@ -106,7 +105,6 @@ struct ListPage: View {
         }
     }
 }
-
 #Preview {
     ListPage(
         selectedType: "Tropical Vacation",
