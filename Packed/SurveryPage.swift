@@ -54,11 +54,11 @@ struct SurveryPage: View {
                         
                         Label(
                             title: {Text(selectedType)
-                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
                                 .padding(.all)},
                             icon: {Image("arrow")
-                                    .resizable()
-                                    .frame(width: 37, height: 30)
+                                .resizable()
+                                .frame(width: 37, height: 30)
                             }
                         )
                     }
@@ -97,11 +97,11 @@ struct SurveryPage: View {
                         
                         Label(
                             title: {Text(selectedWeather)
-                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
                                 .padding(.all)},
                             icon: {Image("arrow")
-                                    .resizable()
-                                    .frame(width: 37, height: 30)
+                                .resizable()
+                                .frame(width: 37, height: 30)
                             }
                         )
                     }
@@ -146,11 +146,11 @@ struct SurveryPage: View {
                         
                         Label(
                             title: {Text("\(selectedLength) Day(s)")
-                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
                                 .padding(.all)},
                             icon: {Image("arrow")
-                                    .resizable()
-                                    .frame(width: 37, height: 30)
+                                .resizable()
+                                .frame(width: 37, height: 30)
                             }
                         )
                     }
@@ -180,11 +180,11 @@ struct SurveryPage: View {
                         
                         Label(
                             title: {Text(selectedGender)
-                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
                                 .padding(.all)},
                             icon: {Image("arrow")
-                                    .resizable()
-                                    .frame(width: 37, height: 30)
+                                .resizable()
+                                .frame(width: 37, height: 30)
                             }
                         )
                     }
@@ -197,7 +197,8 @@ struct SurveryPage: View {
                     selectedType: selectedType,
                     selectedGender: selectedGender,
                     selectedWeather: selectedWeather,
-                    selectedLength: selectedLength
+                    selectedLength: selectedLength,
+                    savedLists: savedLists // Pass the SavedLists instance here
                 )) {
                     ZStack {
                         Rectangle()

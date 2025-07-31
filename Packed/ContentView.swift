@@ -66,6 +66,9 @@ struct ContentView: View {
             }
             .navigationBarHidden(true)
         }
+        .onAppear {
+            savedLists.loadFromStorage()
+        }
     }
 }
 

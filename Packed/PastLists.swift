@@ -1,3 +1,10 @@
+//
+//  PastLists.swift
+//  Packed
+//
+//  Created by Scholar on 7/29/25.
+//
+
 import SwiftUI
 
 struct PastLists: View {

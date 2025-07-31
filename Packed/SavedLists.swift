@@ -1,3 +1,10 @@
+//
+//  SavedLists.swift
+//  Packed
+//
+//  Created by Scholar on 7/29/25.
+//
+
 import SwiftUI
 
 class SavedLists: ObservableObject {
@@ -41,22 +48,5 @@ class SavedLists: ObservableObject {
            let decoded = try? JSONDecoder().decode([PackingList].self, from: data) {
             lists = decoded
         }
-    }
-}
-
-// Preview provider for testing SavedLists
-struct SavedLists_Previews: PreviewProvider {
-    static var previews: some View {
-        let savedLists = SavedLists()
-        savedLists.lists = [
-            SavedLists.PackingList(
-                title: "Beach Trip",
-                items: ["Sunscreen", "Swimsuit", "Towel"],
-                tripType: "Vacation",
-                duration: 7,
-                member: "Family"
-            )
-        ]
-        return PastLists(savedLists: savedLists)
     }
 }
