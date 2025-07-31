@@ -1,3 +1,10 @@
+//
+//  ListPage.swift
+//  Packed
+//
+//  Created by Scholar on 7/29/25.
+//
+
 import SwiftUI
 
 struct ListPage: View {
@@ -5,19 +12,18 @@ struct ListPage: View {
     var selectedGender: String
     var selectedWeather: String
     var selectedLength: Int
-
+    @ObservedObject var savedLists: SavedLists
     @State private var vacationName: String = ""
     @State private var newItem: String = ""
-    @State private var showHomeButton: Bool = false
     @State private var items: [PackingItem] = []
-
+    
     @Environment(\.dismiss) var dismiss
-
+    
     // Grouping logic
     var groupedItems: [String: [Binding<PackingItem>]] {
         Dictionary(grouping: $items, by: { $0.category.wrappedValue })
     }
-
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -25,9 +31,8 @@ struct ListPage: View {
                     .padding([.top, .leading, .bottom])
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
-
                 Divider()
-
+                
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 20) {
                         ForEach(groupedItems.keys.sorted(), id: \.self) { category in
@@ -43,7 +48,7 @@ struct ListPage: View {
                                     .cornerRadius(10)
                                     .padding(.horizontal)
                             ) {
-
+                                
                                 ForEach(groupedItems[category]!) { $item in
                                     HStack {
                                         // Custom square checkbox
@@ -86,7 +91,7 @@ struct ListPage: View {
                     }
                     .padding(.top)
                 }
-
+                
                 // Add new item manually
                 HStack {
                     TextField("Item Name", text: $newItem)
@@ -116,44 +121,45 @@ struct ListPage: View {
                         .foregroundColor(Color.gray.opacity(0.4)),
                     alignment: .top
                 )
-
-                // Go Home button
+                
+                // Save and Go Home buttons
                 VStack(spacing: 0) {
-                    if showHomeButton {
-                        NavigationLink(destination: ContentView()) {
-                            Text("Go Home")
-                                .font(.headline)
-                                .padding(.vertical, 14)
-                                .frame(maxWidth: .infinity)
-                                .background(Color("lightBlue"))
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                                .padding(.horizontal)
-                        }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-
                     Button(action: {
-                        withAnimation {
-                            showHomeButton.toggle()
-                        }
+                        let listItems = items.map { $0.name }
+                        savedLists.saveList(
+                            title: vacationName.isEmpty ? "Untitled" : vacationName,
+                            items: listItems,
+                            type: selectedType,
+                            duration: selectedLength,
+                            member: selectedGender
+                        )
+                        dismiss()
                     }) {
-                        Image(systemName: showHomeButton ? "chevron.down" : "chevron.up")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.gray)
-                            .padding(.bottom, 10)
+                        Text("Save List")
+                            .font(.headline)
+                            .padding(.vertical, 14)
+                            .frame(maxWidth: .infinity)
+                            .background(Color("lightBlue"))
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .padding(.horizontal)
                     }
+                    .padding(.top, 10)
                 }
+                .padding(.bottom, 20)
             }
             .padding(.top)
             .onAppear {
                 if items.isEmpty {
-                    items = ListItems.generatePackingList(
-                        type: selectedType,
-                        gender: selectedGender,
-                        weather: selectedWeather,
-                        length: selectedLength
-                    )
+                    Task {
+                        items = await ListItems.generatePackingList(
+                            type: selectedType,
+                            gender: selectedGender,
+                            weather: selectedWeather,
+                            length: selectedLength
+                        )
+                        vacationName = "\(selectedType) - \(selectedLength) Day(s)"
+                    }
                 }
             }
         }
@@ -165,6 +171,7 @@ struct ListPage: View {
         selectedType: "Tropical Vacation",
         selectedGender: "Female",
         selectedWeather: "Sunny",
-        selectedLength: 3
+        selectedLength: 3,
+        savedLists: SavedLists()
     )
 }

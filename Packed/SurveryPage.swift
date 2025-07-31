@@ -12,6 +12,7 @@ struct SurveryPage: View {
     @State private var selectedGender = "I prefer not to say"
     @State private var selectedWeather = "Sunny"
     @State private var selectedLength = 1
+    @ObservedObject var savedLists: SavedLists // Add this line to receive the SavedLists instance
     
     var body: some View {
         NavigationStack {
@@ -24,6 +25,7 @@ struct SurveryPage: View {
                     .padding(.bottom, 35.0)
                 
                 Spacer()
+                
                 // Type of Vacation button
                 Text("TYPE OF VACATION")
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
@@ -47,23 +49,24 @@ struct SurveryPage: View {
                     ZStack {
                         Rectangle()
                             .foregroundColor(Color("buttonGray"))
-                            .frame(width: 350, height: 50) // Set constant size here
+                            .frame(width: 350, height: 50)
                             .cornerRadius(10)
                         
                         Label(
                             title: {Text(selectedType)
-                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
-                                .padding(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)},
+                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .padding(.all)},
                             icon: {Image("arrow")
-                                    .resizable()
-                                    .frame(width: 37, height: 30)
+                                .resizable()
+                                .frame(width: 37, height: 30)
                             }
                         )
                     }
                     .padding(.top, 8.0)
                 }
                 .padding(.bottom)
-                // Type of Vacation button
+                
+                // Weather button
                 Text("WEATHER")
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
                 Menu {
@@ -89,16 +92,16 @@ struct SurveryPage: View {
                     ZStack {
                         Rectangle()
                             .foregroundColor(Color("buttonGray"))
-                            .frame(width: 350, height: 50) // Set constant size here
+                            .frame(width: 350, height: 50)
                             .cornerRadius(10)
                         
                         Label(
                             title: {Text(selectedWeather)
-                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
-                                .padding(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)},
+                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .padding(.all)},
                             icon: {Image("arrow")
-                                    .resizable()
-                                    .frame(width: 37, height: 30)
+                                .resizable()
+                                .frame(width: 37, height: 30)
                             }
                         )
                     }
@@ -106,7 +109,7 @@ struct SurveryPage: View {
                 }
                 .padding(.bottom)
                 
-                // Type of Vacation button
+                // Length of Vacation button
                 Text("LENGTH OF VACATION")
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
                 Menu {
@@ -138,25 +141,24 @@ struct SurveryPage: View {
                     ZStack {
                         Rectangle()
                             .foregroundColor(Color("buttonGray"))
-                            .frame(width: 350, height: 50) // Set constant size here
+                            .frame(width: 350, height: 50)
                             .cornerRadius(10)
                         
                         Label(
                             title: {Text("\(selectedLength) Day(s)")
-                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
-                                .padding(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)},
+                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .padding(.all)},
                             icon: {Image("arrow")
-                                    .resizable()
-                                    .frame(width: 37, height: 30)
+                                .resizable()
+                                .frame(width: 37, height: 30)
                             }
                         )
                     }
                     .padding(.top, 8.0)
-
                 }
                 .padding(.bottom)
                 
-                // Type of Vacation button
+                // Gender button
                 Text("GENDER")
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
                 Menu {
@@ -173,29 +175,30 @@ struct SurveryPage: View {
                     ZStack {
                         Rectangle()
                             .foregroundColor(Color("buttonGray"))
-                            .frame(width: 350, height: 50) // Set constant size here
+                            .frame(width: 350, height: 50)
                             .cornerRadius(10)
                         
                         Label(
                             title: {Text(selectedGender)
-                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
-                                .padding(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)},
+                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .padding(.all)},
                             icon: {Image("arrow")
-                                    .resizable()
-                                    .frame(width: 37, height: 30)
+                                .resizable()
+                                .frame(width: 37, height: 30)
                             }
                         )
-
                     }
                     .padding(.bottom)
                 }
                 
                 Spacer()
+                
                 NavigationLink(destination: ListPage(
                     selectedType: selectedType,
                     selectedGender: selectedGender,
                     selectedWeather: selectedWeather,
-                    selectedLength: selectedLength
+                    selectedLength: selectedLength,
+                    savedLists: savedLists // Pass the SavedLists instance here
                 )) {
                     ZStack {
                         Rectangle()
@@ -207,6 +210,7 @@ struct SurveryPage: View {
                             .foregroundColor(Color.white)
                     }
                 }
+                
                 Spacer()
             }
         }
@@ -214,5 +218,5 @@ struct SurveryPage: View {
 }
 
 #Preview {
-    SurveryPage()
+    SurveryPage(savedLists: SavedLists()) // Update the preview to include SavedLists
 }

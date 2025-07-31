@@ -1,75 +1,73 @@
 import SwiftUI
 
 struct PastLists: View {
-    @State private var savedLists: [PackingList] = []
-    @State private var goHome = false
-
+    @ObservedObject var savedLists: SavedLists
+    
     var body: some View {
-        VStack {
-            Text("Past Lists")
-                .padding(.top)
-                .font(.largeTitle)
-
-            Divider()
-
-            if savedLists.isEmpty {
-                Spacer()
-                Text("No past lists yet.")
+        NavigationStack {
+            if savedLists.lists.isEmpty {
+                Text("No saved lists yet")
                     .foregroundColor(.gray)
-                Spacer()
             } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        ForEach(savedLists) { list in
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text(list.vacationName)
+                List {
+                    ForEach(savedLists.lists) { list in
+                        NavigationLink {
+                            ListDetailView(list: list)
+                        } label: {
+                            VStack(alignment: .leading) {
+                                Text(list.title)
                                     .font(.headline)
-                                ForEach(list.items, id: \.self) { item in
-                                    Text("• \(item)")
-                                }
+                                Text("\(list.items.count) items • \(list.duration) day(s) • \(list.member)")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
                             }
-                            .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(10)
                         }
                     }
-                    .padding(.horizontal)
+                    .onDelete(perform: savedLists.deleteList)
                 }
             }
-
-            Button(action: {
-                goHome = true
-            }) {
-                Text("Go Home")
-                    .font(.headline)
-                    .padding(.vertical, 12)
-                    .frame(maxWidth: .infinity)
-                    .background(Color("lightBlue"))
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            .padding(.horizontal)
-            .padding(.bottom)
         }
-        .padding()
-        .onAppear {
-            loadSavedLists()
-        }
-        .navigationDestination(isPresented: $goHome) {
-            ContentView()
-        }
-    }
-
-    func loadSavedLists() {
-        if let data = UserDefaults.standard.data(forKey: "savedPackingLists"),
-           let decoded = try? JSONDecoder().decode([PackingList].self, from: data) {
-            savedLists = decoded
+        .navigationTitle("Saved Lists")
+        .toolbar {
+            EditButton()
         }
     }
 }
 
-#Preview {
-    NavigationStack {
-        PastLists()
+struct ListDetailView: View {
+    let list: SavedLists.PackingList
+    
+    var body: some View {
+        List {
+            Section("Trip Details") {
+                Text("Type: \(list.tripType)")
+                Text("Member: \(list.member)")
+                Text("Duration: \(list.duration) day(s)")
+            }
+            
+            Section("Packing List") {
+                ForEach(list.items, id: \.self) { item in
+                    Text(item)
+                }
+            }
+        }
+        .navigationTitle(list.title)
+    }
+}
+
+// Preview provider for PastLists
+struct PastLists_Previews: PreviewProvider {
+    static var previews: some View {
+        let savedLists = SavedLists()
+        savedLists.lists = [
+            SavedLists.PackingList(
+                title: "Beach Trip",
+                items: ["Sunscreen", "Swimsuit", "Towel"],
+                tripType: "Vacation",
+                duration: 7,
+                member: "Family"
+            )
+        ]
+        return PastLists(savedLists: savedLists)
     }
 }
