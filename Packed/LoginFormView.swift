@@ -12,11 +12,13 @@ struct LoginFormView: View {
     @State private var username = ""
     @State private var password = ""
     @State private var errorMessage = ""
-    @State private var showPasswordError = false
     
-    init(userData: UserData) {
-        self.userData = userData
-    }
+    // Simple fake user database for demo
+    private let validUsers = [
+        "john": ("John Doe", "password123"),
+        "sarah": ("Sarah Smith", "mypass456"),
+        "alex": ("Alex Johnson", "hello789")
+    ]
     
     var body: some View {
         NavigationStack {
@@ -40,17 +42,7 @@ struct LoginFormView: View {
                         .font(.caption)
                 }
                 
-                if showPasswordError {
-                    Text("Please use the right password")
-                        .foregroundColor(.red)
-                        .font(.caption)
-                }
-                
-                Button(action: {
-                    if validateLogin() {
-                        userData.login(username: username) // This triggers persistent login
-                    }
-                }) {
+                Button(action: loginUser) {
                     Text("Log In")
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(!username.isEmpty && !password.isEmpty ? Color.blue : Color.gray)
@@ -61,43 +53,34 @@ struct LoginFormView: View {
                 .disabled(username.isEmpty || password.isEmpty)
             }
             .padding()
-            .navigationDestination(isPresented: .constant(userData.isLoggedIn && errorMessage.isEmpty)) {
+            .navigationDestination(isPresented: .constant(userData.isLoggedIn)) {
                 ProfileView(userData: userData)
             }
         }
     }
     
-    private func validateLogin() -> Bool {
+    private func loginUser() {
         errorMessage = ""
-        showPasswordError = false
         
         guard !username.isEmpty else {
             errorMessage = "Please enter your username"
-            return false
+            return
         }
         
         guard !password.isEmpty else {
             errorMessage = "Please enter your password"
-            return false
+            return
         }
         
-        // Simple validation - replace with real authentication
-        let validUsers = [
-            "john": "password123",
-            "sarah": "mypass456",
-            "alex": "hello789"
-        ]
-        
-        if let correctPassword = validUsers[username.lowercased()] {
-            if password == correctPassword {
-                return true // Successful login
+        if let user = validUsers[username.lowercased()] {
+            if password == user.1 {
+                // Successful login
+                userData.login(name: user.0, username: username.lowercased())
             } else {
-                showPasswordError = true
-                return false
+                errorMessage = "Please use the right password"
             }
         } else {
-            errorMessage = "Username not found"
-            return false
+            errorMessage = "Username not found. Please check your username or create an account."
         }
     }
 }

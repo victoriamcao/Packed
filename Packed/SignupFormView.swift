@@ -121,7 +121,7 @@ struct SignupFormView: View {
             return
         }
         
-        userData.name = name
+        userData.login(name: name, username: username)
     }
     
     private func isPasswordValid(_ password: String) -> Bool {
