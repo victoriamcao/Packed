@@ -39,7 +39,7 @@ struct ListPage: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.vertical, 12)
                                     .padding(.horizontal, 16)
-                                    .background(Color("accentRed"))
+                                    .background(Color("lightBlue"))
                                     .cornerRadius(10)
                                     .padding(.horizontal)
                             ) {
@@ -58,7 +58,7 @@ struct ListPage: View {
                                                     .frame(width: 24, height: 24)
                                                     .background(
                                                         RoundedRectangle(cornerRadius: 4)
-                                                            .fill(item.isPacked ? Color("lightBlue") : Color.clear)
+                                                            .fill(item.isPacked ? Color("accentRed") : Color.clear)
                                                     )
                                                 
                                                 if item.isPacked {
