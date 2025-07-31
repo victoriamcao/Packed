@@ -17,6 +17,7 @@ struct SignupFormView: View {
     @State private var canSignUp = false
     @State private var emailValid = false
     @State private var showEmailError = false
+
     
     init(userData: UserData) {
         self.userData = userData
@@ -108,12 +109,26 @@ struct SignupFormView: View {
                 Button(action: signUpUser) {
                     Text("Sign Up")
                         .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(canSignUp ? Color.green : Color.gray)
+                        .background(canSignUp ? Color.lightBlue : Color.gray)
                         .foregroundColor(.white)
                         .cornerRadius(10)
                         .padding(.horizontal)
                 }
                 .disabled(!canSignUp)
+
+                // Navigation to Login
+                NavigationLink(destination: LoginFormView(userData: userData)) {
+                    HStack {
+                        Text("I already have an account")
+                            .foregroundColor(Color.blue)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue)
+                    }
+                }
+                .padding(.top, 10)
+
+            
             }
             .padding()
             .navigationDestination(isPresented: .constant(userData.isLoggedIn && errorMessage.isEmpty)) {

@@ -22,26 +22,31 @@ struct ProfileView: View {
                 Text("Welcome, \(userData.name)!")
                     .font(.title)
                 
-                Button(action: {
-                    userData.logout()
-                    dismiss() // Goes back to previous screen
-                }) {
-                    Text("Log Out")
-                        .frame(maxWidth: 200, minHeight: 50)
-                        .background(Color.red)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                
                 Spacer()
+                
+                NavigationLink(
+                    destination: LoginFormView(userData: userData),
+                    label: {
+                        Text("Log Out")
+                            .padding(.vertical, 15)
+                            .frame(maxWidth: 350, minHeight: 50)
+                            .background(Color.red)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                )
+                .simultaneousGesture(TapGesture().onEnded {
+                    userData.logout()
+                })
+                .padding()
+                .navigationTitle("Your Profile")
+                .navigationBarTitleDisplayMode(.inline)
+
             }
-            .padding()
-            .navigationTitle("Your Profile")
-            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
-
-#Preview {
-    ProfileView(userData: UserData())
-}
+    #Preview {
+        ProfileView(userData: UserData())
+    }
+    
