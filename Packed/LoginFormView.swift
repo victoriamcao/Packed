@@ -51,6 +51,15 @@ struct LoginFormView: View {
                         .padding(.horizontal)
                 }
                 .disabled(username.isEmpty || password.isEmpty)
+                Button(action: loginUser) {
+                    HStack {
+                        Text("Forgot Password")
+                            .foregroundColor(Color.blue)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue)
+                    }
+                }
             }
             .padding()
             .navigationDestination(isPresented: .constant(userData.isLoggedIn)) {

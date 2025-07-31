@@ -113,6 +113,8 @@ struct SignupFormView: View {
                         .cornerRadius(10)
                         .padding(.horizontal)
                 }
+            
+            
                 .disabled(!canSignUp)
             }
             .padding()
