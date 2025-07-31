@@ -3,9 +3,7 @@
 //  Packed
 //
 //
-
 import SwiftUI
-
 struct ContentView: View {
     @StateObject var savedLists = SavedLists()
     @StateObject var userData = UserData()
@@ -152,7 +150,6 @@ struct ContentView: View {
             }
     }
 }
-
 #Preview {
     ContentView()
 }
