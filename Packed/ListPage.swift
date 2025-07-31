@@ -1,4 +1,5 @@
 import SwiftUI
+
 struct ListPage: View {
     var selectedType: String
     var selectedGender: String
@@ -8,11 +9,14 @@ struct ListPage: View {
     @State private var newItem: String = ""
     @State private var showHomeButton: Bool = false
     @State private var items: [PackingItem] = []
+
     @Environment(\.dismiss) var dismiss
+
     // Grouping logic
     var groupedItems: [String: [Binding<PackingItem>]] {
         Dictionary(grouping: $items, by: { $0.category.wrappedValue })
     }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -21,6 +25,7 @@ struct ListPage: View {
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
                 Divider()
+
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 20) {
                         ForEach(groupedItems.keys.sorted(), id: \.self) { category in
@@ -32,10 +37,11 @@ struct ListPage: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.vertical, 12)
                                     .padding(.horizontal, 16)
-                                    .background(Color("lightBlue"))
+                                    .background(Color("accentRed"))
                                     .cornerRadius(10)
                                     .padding(.horizontal)
                             ) {
+
                                 ForEach(groupedItems[category]!) { $item in
                                     HStack {
                                         // Custom square checkbox
@@ -78,6 +84,7 @@ struct ListPage: View {
                     }
                     .padding(.top)
                 }
+
                 // Add new item manually
                 HStack {
                     TextField("Item Name", text: $newItem)
@@ -107,6 +114,7 @@ struct ListPage: View {
                         .foregroundColor(Color.gray.opacity(0.4)),
                     alignment: .top
                 )
+
                 // Go Home button
                 VStack(spacing: 0) {
                     if showHomeButton {
@@ -122,6 +130,7 @@ struct ListPage: View {
                         }
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
+
                     Button(action: {
                         withAnimation {
                             showHomeButton.toggle()
@@ -148,6 +157,7 @@ struct ListPage: View {
         }
     }
 }
+
 #Preview {
     ListPage(
         selectedType: "Tropical Vacation",
