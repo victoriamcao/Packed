@@ -55,26 +55,25 @@ struct ContentView: View {
                 VStack {
                     HStack {
                         Spacer()
-                        Button(action: {
-                            showAuthScreen = true
-                        }) {
+                            NavigationLink {
+                            if userData.isLoggedIn {
+                            ProfileView(userData: userData)
+                            } else {
+                            LoginChoiceView(userData: userData)
+                                         }
+                            } label: {
                             Image(systemName: "person.circle")
-                                .resizable()
-                                .frame(width: 30, height: 30)
-                                .padding()
-                               
-                        }
-                    }
-                    Spacer()
-                }
+                                    .resizable()
+                                    .frame(width: 30, height: 30)
+                                    .padding()
+                                    .offset(y: 750)
+                                    .offset(x: -40)
+                                     }
+                                 }
+                                 Spacer()
+                             }
             }
-            .navigationDestination(isPresented: $showAuthScreen) {
-                if userData.isLoggedIn {
-                    ProfileView(userData: userData)
-                } else {
-                    LoginChoiceView(userData: userData)
-                }
-            }
+            
         }
     }
 }
