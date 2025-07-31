@@ -153,7 +153,3 @@ struct ContentView: View {
 #Preview {
     ContentView()
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> main
