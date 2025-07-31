@@ -51,7 +51,8 @@ struct LoginFormView: View {
                         .padding(.horizontal)
                 }
                 .disabled(username.isEmpty || password.isEmpty)
-                Button(action: loginUser) {
+                
+                NavigationLink(destination: SignupFormView(userData: userData)) {
                     HStack {
                         Text("Forgot Password")
                             .foregroundColor(Color.blue)

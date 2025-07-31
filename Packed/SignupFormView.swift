@@ -17,6 +17,7 @@ struct SignupFormView: View {
     @State private var canSignUp = false
     @State private var emailValid = false
     @State private var showEmailError = false
+
     
     init(userData: UserData) {
         self.userData = userData
@@ -108,7 +109,7 @@ struct SignupFormView: View {
                 Button(action: signUpUser) {
                     Text("Sign Up")
                         .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(canSignUp ? Color.green : Color.gray)
+                        .background(canSignUp ? Color.lightBlue : Color.gray)
                         .foregroundColor(.white)
                         .cornerRadius(10)
                         .padding(.horizontal)
