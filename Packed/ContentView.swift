@@ -9,7 +9,12 @@ import SwiftUI
 struct ContentView: View {
     @StateObject var userData = UserData()
     @State private var showAuthScreen = false
-    @State private var currentTab: Tab = .home // Track current tab
+    @State private var currentTab: Tab = .home
+    @State private var forceRefreshID = UUID()
+    
+    // Add these for navigation control
+    @State private var isShowingExplore = false
+    @State private var isShowingProfile = false
     
     enum Tab: String {
         case home, explore, profile
@@ -46,7 +51,7 @@ struct ContentView: View {
                 .padding()
                 .padding(.horizontal)
                 
-                // Your original plane image (unchanged)
+                // Plane image (unchanged)
                 Image("plane 1")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -55,54 +60,90 @@ struct ContentView: View {
                     .offset(x: -50)
                     .rotationEffect(.degrees(-8))
                 
-                // Enhanced BottomNavBar with smart tab handling
+                // Bottom Navigation Bar
                 HStack {
                     // Home Tab
                     Button {
+                        if currentTab == .home {
+                            forceRefreshID = UUID()
+                        }
                         currentTab = .home
+                        isShowingExplore = false
+                        isShowingProfile = false
                     } label: {
-                        VStack {
+                        VStack (spacing: 4) {
                             Image(systemName: "house.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(currentTab == .home ? .blue : .gray)
-                            Text("Home")
-                                .font(.caption)
+                                .font(.system(size: 25))
+                                .foregroundColor(currentTab == .home ? .darkBlue : .textGray)
+                           
                         }
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                     }
                     
                     // Explore Tab
                     Button {
+                        if currentTab == .explore {
+                            forceRefreshID = UUID()
+                        }
                         currentTab = .explore
+                        isShowingExplore = true
+                        isShowingProfile = false
                     } label: {
                         VStack {
                             Image(systemName: "globe")
-                                .font(.system(size: 24))
-                                .foregroundColor(currentTab == .explore ? .blue : .gray)
-                            Text("Explore")
-                                .font(.caption)
+                                .font(.system(size: 25))
+                                .foregroundColor(currentTab == .explore ? .darkBlue : .textGray)
+                        
                         }
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                     }
                     
                     // Profile Tab
                     Button {
+                        if currentTab == .profile {
+                            forceRefreshID = UUID()
+                        }
                         currentTab = .profile
+                        isShowingExplore = false
+                        isShowingProfile = true
                     } label: {
                         VStack {
                             Image(systemName: userData.isLoggedIn ? "person.circle.fill" : "person.crop.circle")
-                                .font(.system(size: 24))
-                                .foregroundColor(currentTab == .profile ? .blue : .gray)
-                            Text("Profile")
-                                .font(.caption)
+                                .font(.system(size: 25))
+                                .foregroundColor(currentTab == .profile ? .darkBlue : .textGray)
+                           
                         }
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                     }
                 }
                 .padding(.vertical, 8)
                 .background(Color(.systemBackground))
-                .overlay(Divider(), alignment: .top)
-                .offset(y: 290) // Keeping your exact offset
+                .offset(y: 298)
+                
+                // Updated Hidden Navigation
+                Group {
+                    NavigationLink(
+                        destination: MapPage().id(forceRefreshID),
+                        isActive: $isShowingExplore,
+                        label: { EmptyView() }
+                    )
+                    
+                    NavigationLink(
+                        destination: userData.isLoggedIn ?
+                            AnyView(ProfileView(userData: userData).id(forceRefreshID)) :
+                            AnyView(LoginChoiceView(userData: userData).id(forceRefreshID)),
+                        isActive: $isShowingProfile,
+                        label: { EmptyView() }
+                    )
+                }
+                .onChange(of: currentTab) { newTab in
+                    // Reset navigation states when tab changes
+                    isShowingExplore = (newTab == .explore)
+                    isShowingProfile = (newTab == .profile)
+                }
             }
         }
     }
