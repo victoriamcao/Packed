@@ -113,9 +113,21 @@ struct SignupFormView: View {
                         .cornerRadius(10)
                         .padding(.horizontal)
                 }
-            
-            
                 .disabled(!canSignUp)
+
+                // Navigation to Login
+                NavigationLink(destination: LoginFormView(userData: userData)) {
+                    HStack {
+                        Text("I already have an account")
+                            .foregroundColor(Color.blue)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue)
+                    }
+                }
+                .padding(.top, 10)
+
+            
             }
             .padding()
             .navigationDestination(isPresented: .constant(userData.isLoggedIn && errorMessage.isEmpty)) {
