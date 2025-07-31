@@ -19,7 +19,7 @@ struct LoginChoiceView: View {
                     .resizable()
                     .frame(width: 200, height: 200)
 
-                Text("Welcome")
+                Text("Join us!")
                     .font(.largeTitle)
                     .bold()
                     .padding(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
