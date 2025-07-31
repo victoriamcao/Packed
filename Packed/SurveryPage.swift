@@ -1,90 +1,221 @@
+//
+//  SurveryPage.swift
+//  Packed
+//
+//  Created by Scholar on 7/29/25.
+//
+
 import SwiftUI
 
-struct ListPage: View {
-    @EnvironmentObject var savedLists: SavedLists
-    @State private var currentList: [String] = []
-    @State private var newItem: String = ""
-    @State private var tripName: String = ""
-    @Environment(\.dismiss) var dismiss
-    
-    var selectedType: String
-    var selectedGender: String
-    var selectedWeather: String
-    var selectedLength: Int
+struct SurveryPage: View {
+    @State private var selectedType = "Tropical Vacation"
+    @State private var selectedGender = "I prefer not to say"
+    @State private var selectedWeather = "Sunny"
+    @State private var selectedLength = 1
+    @ObservedObject var savedLists: SavedLists // Add this line to receive the SavedLists instance
     
     var body: some View {
-        VStack {
-            TextField("Name Your Trip", text: $tripName)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-                .onAppear {
-                    if tripName.isEmpty {
-                        tripName = "\(selectedType) Trip"
-                    }
-                }
-            
-            HStack {
-                TextField("Add item", text: $newItem)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+        NavigationStack {
+            VStack {
+                Text("Create New List")
+                    .font(.largeTitle)
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color(red: 0.195, green: 0.648, blue: 0.859))
+                    .padding(.top, 75.0)
+                    .padding(.bottom, 35.0)
                 
-                Button("Add") {
-                    if !newItem.isEmpty {
-                        currentList.append(newItem)
-                        newItem = ""
+                Spacer()
+                
+                // Type of Vacation button
+                Text("TYPE OF VACATION")
+                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
+                Menu {
+                    Button(action: { selectedType = "Tropical Vacation" }) {
+                        Text("Tropical Vacation")
+                    }
+                    Button(action: { selectedType = "Mountain Vacation" }) {
+                        Text("Mountain Vacation")
+                    }
+                    Button(action: { selectedType = "Ski Trip" }) {
+                        Text("Ski Trip")
+                    }
+                    Button(action: { selectedType = "City Vacation" }) {
+                        Text("City Vacation")
+                    }
+                    Button(action: { selectedType = "Business Trip" }) {
+                        Text("Business Trip")
+                    }
+                } label: {
+                    ZStack {
+                        Rectangle()
+                            .foregroundColor(Color("buttonGray"))
+                            .frame(width: 350, height: 50)
+                            .cornerRadius(10)
+                        
+                        Label(
+                            title: {Text(selectedType)
+                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .padding(.all)},
+                            icon: {Image("arrow")
+                                    .resizable()
+                                    .frame(width: 37, height: 30)
+                            }
+                        )
+                    }
+                    .padding(.top, 8.0)
+                }
+                .padding(.bottom)
+                
+                // Weather button
+                Text("WEATHER")
+                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
+                Menu {
+                    Button(action: { selectedWeather = "Sunny" }) {
+                        Text("Sunny")
+                    }
+                    Button(action: { selectedWeather = "Rainy" }) {
+                        Text("Rainy")
+                    }
+                    Button(action: { selectedWeather = "Cloudy" }) {
+                        Text("Cloudy")
+                    }
+                    Button(action: { selectedWeather = "Foggy" }) {
+                        Text("Foggy")
+                    }
+                    Button(action: { selectedWeather = "Windy" }) {
+                        Text("Windy")
+                    }
+                    Button(action: { selectedWeather = "Snowy" }) {
+                        Text("Snowy")
+                    }
+                } label: {
+                    ZStack {
+                        Rectangle()
+                            .foregroundColor(Color("buttonGray"))
+                            .frame(width: 350, height: 50)
+                            .cornerRadius(10)
+                        
+                        Label(
+                            title: {Text(selectedWeather)
+                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .padding(.all)},
+                            icon: {Image("arrow")
+                                    .resizable()
+                                    .frame(width: 37, height: 30)
+                            }
+                        )
+                    }
+                    .padding(.top, 8.0)
+                }
+                .padding(.bottom)
+                
+                // Length of Vacation button
+                Text("LENGTH OF VACATION")
+                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
+                Menu {
+                    Button(action: { selectedLength = 1 }) {
+                        Text("1 Day")
+                    }
+                    Button(action: { selectedLength = 2 }) {
+                        Text("2 Days")
+                    }
+                    Button(action: { selectedLength = 3 }) {
+                        Text("3 Days")
+                    }
+                    Button(action: { selectedLength = 4 }) {
+                        Text("4 Days")
+                    }
+                    Button(action: { selectedLength = 5 }) {
+                        Text("5 Days")
+                    }
+                    Button(action: { selectedLength = 6 }) {
+                        Text("6 Days")
+                    }
+                    Button(action: { selectedLength = 7 }) {
+                        Text("7 Days")
+                    }
+                    Button(action: { selectedLength = 8 }) {
+                        Text("8+ Days")
+                    }
+                } label: {
+                    ZStack {
+                        Rectangle()
+                            .foregroundColor(Color("buttonGray"))
+                            .frame(width: 350, height: 50)
+                            .cornerRadius(10)
+                        
+                        Label(
+                            title: {Text("\(selectedLength) Day(s)")
+                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .padding(.all)},
+                            icon: {Image("arrow")
+                                    .resizable()
+                                    .frame(width: 37, height: 30)
+                            }
+                        )
+                    }
+                    .padding(.top, 8.0)
+                }
+                .padding(.bottom)
+                
+                // Gender button
+                Text("GENDER")
+                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
+                Menu {
+                    Button(action: { selectedGender = "I prefer not to say" }) {
+                        Text("I prefer not to say")
+                    }
+                    Button(action: { selectedGender = "Male" }) {
+                        Text("Male")
+                    }
+                    Button(action: { selectedGender = "Female" }) {
+                        Text("Female")
+                    }
+                } label: {
+                    ZStack {
+                        Rectangle()
+                            .foregroundColor(Color("buttonGray"))
+                            .frame(width: 350, height: 50)
+                            .cornerRadius(10)
+                        
+                        Label(
+                            title: {Text(selectedGender)
+                                    .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
+                                .padding(.all)},
+                            icon: {Image("arrow")
+                                    .resizable()
+                                    .frame(width: 37, height: 30)
+                            }
+                        )
+                    }
+                    .padding(.bottom)
+                }
+                
+                Spacer()
+                
+                NavigationLink(destination: ListPage(
+                    selectedType: selectedType,
+                    selectedGender: selectedGender,
+                    selectedWeather: selectedWeather,
+                    selectedLength: selectedLength
+                )) {
+                    ZStack {
+                        Rectangle()
+                            .foregroundColor(Color("lightBlue"))
+                            .frame(width: 350, height: 50)
+                            .cornerRadius(10)
+                        Text("Create")
+                            .font(.title2)
+                            .foregroundColor(Color.white)
                     }
                 }
+                
+                Spacer()
             }
-            .padding()
-            
-            List {
-                ForEach(currentList, id: \.self) { item in
-                    Text(item)
-                }
-                .onDelete { indexSet in
-                    currentList.remove(atOffsets: indexSet)
-                }
-            }
-            
-            Button("Save and Go Home") {
-                saveList()
-                dismiss()
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color("lightBlue"))
-            .foregroundColor(.white)
-            .cornerRadius(15)
-            .padding()
         }
-        .onAppear {
-            currentList = ListItems.generatePackingList(
-                type: selectedType,
-                gender: selectedGender,
-                weather: selectedWeather,
-                length: selectedLength
-            )
-        }
-    }
-    
-    private func saveList() {
-        guard !currentList.isEmpty else { return }
-        
-        var completeList = currentList
-        completeList.insert("TRIP_NAME: \(tripName)", at: 0)
-        completeList.insert("TYPE: \(selectedType)", at: 1)
-        completeList.insert("DURATION: \(selectedLength) days", at: 2)
-        completeList.insert("WEATHER: \(selectedWeather)", at: 3)
-        
-        savedLists.lists.insert(completeList, at: 0)
     }
 }
 
 #Preview {
-    ListPage(
-        selectedType: "Beach Vacation",
-        selectedGender: "Female",
-        selectedWeather: "Sunny",
-        selectedLength: 5
-    )
-    .environmentObject(SavedLists())
+    SurveryPage(savedLists: SavedLists()) // Update the preview to include SavedLists
 }

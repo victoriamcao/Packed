@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct PackedApp: App {
-    @StateObject var savedLists = SavedLists()
+    @StateObject private var savedLists = SavedLists()
     
     var body: some Scene {
         WindowGroup {
