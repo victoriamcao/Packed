@@ -27,10 +27,10 @@ struct MapView: UIViewRepresentable {
         uiView.removeAnnotations(uiView.annotations)
 
         for pin in pins {
-            let annotation = MKPointAnnotation()
+            let annotation = PinAnnotation()
             annotation.coordinate = pin.coordinate
-            annotation.title = "Tap to view image"
-            annotation.subtitle = pin.id.uuidString // Use UUID to match later
+            annotation.title = "Tap to view photos"
+            annotation.pinId = pin.id // Store the actual pin ID
             uiView.addAnnotation(annotation)
         }
     }
@@ -52,27 +52,32 @@ struct MapView: UIViewRepresentable {
             let location = gestureRecognizer.location(in: mapView)
             let tappedPoint = mapView.convert(location, toCoordinateFrom: mapView)
 
-            // If user tapped on an existing annotation, ignore it
-            let tappedAnnotations = mapView.annotations(in: mapView.visibleMapRect).filter { annotation in
-                let coord = (annotation as? MKAnnotation)?.coordinate
-                return coord != nil && abs(coord!.latitude - tappedPoint.latitude) < 0.0005 &&
-                                      abs(coord!.longitude - tappedPoint.longitude) < 0.0005
+            for annotation in mapView.annotations {
+                let annotationPoint = mapView.convert(annotation.coordinate, toPointTo: mapView)
+                let distance = sqrt(pow(annotationPoint.x - location.x, 2) + pow(annotationPoint.y - location.y, 2))
+                
+                if distance < 44 {
+                    return
+                }
             }
-
-            guard tappedAnnotations.isEmpty else { return }
 
             parent.onTap(tappedPoint)
         }
 
-
         func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-            guard let annotation = view.annotation,
-                  let idString = annotation.subtitle,
-                  let pin = parent.pins.first(where: { $0.id.uuidString == idString }) else {
+            guard let annotation = view.annotation as? PinAnnotation,
+                  let pin = parent.pins.first(where: { $0.id == annotation.pinId }) else {
                 return
             }
+            
             parent.onAnnotationTap(pin)
         }
     }
 }
 
+class PinAnnotation: NSObject, MKAnnotation {
+    var coordinate: CLLocationCoordinate2D = CLLocationCoordinate2D()
+    var title: String?
+    var subtitle: String?
+    var pinId: UUID = UUID()
+}
