@@ -18,10 +18,8 @@ struct MapPage: View {
                         abs($0.coordinate.latitude - coordinate.latitude) < 0.0005 &&
                         abs($0.coordinate.longitude - coordinate.longitude) < 0.0005
                     }) {
-                        // Show preview for existing pin
                         selectedPinForPreview = existingPin
                     } else {
-                        // Create a new pin with empty images, add it to pins array so it has an ID
                         let newPin = Pin(coordinate: coordinate, images: [])
                         pins.append(newPin)
                         selectedPinForPreview = newPin
@@ -32,25 +30,10 @@ struct MapPage: View {
                 }
             )
             .edgesIgnoringSafeArea(.all)
-
-            VStack {
-                HStack {
-                    Text("Pins: \(pins.count)")
-                        .padding(8)
-                        .background(Color.black.opacity(0.7))
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                    Spacer()
-                }
-                .padding()
-                Spacer()
-            }
         }
-        // Image picker sheet
         .sheet(isPresented: $showingImagePicker) {
             ImagePicker(image: $pickedImage)
         }
-        // Confirm image sheet
         .sheet(isPresented: $showingConfirmImage) {
             if let image = pickedImage {
                 ZStack {
@@ -87,37 +70,52 @@ struct MapPage: View {
                 }
             }
         }
-        // Pin photo preview sheet
-        .sheet(item: $selectedPinForPreview) { pin in
-            ScrollView {
-                VStack {
-                    Text("Photos at Location")
-                        .font(.headline)
+        .fullScreenCover(item: $selectedPinForPreview) { pin in
+            let updatedPin = pins.first(where: { $0.id == pin.id }) ?? pin
+
+            NavigationView {
+                ScrollView {
+                    VStack {
+                        Text("Photos at Location")
+                            .font(.headline)
+                            .padding()
+
+                        if updatedPin.images.isEmpty {
+                            Text("No photos yet.")
+                                .foregroundColor(.gray)
+                                .padding()
+                        } else {
+                            ForEach(updatedPin.images.indices, id: \.self) { index in
+                                Image(uiImage: updatedPin.images[index])
+                                    .resizable()
+                                    .scaledToFit()
+                                    .cornerRadius(10)
+                                    .padding()
+                            }
+                        }
+
+                        Button("Add Photo") {
+                            selectedCoordinate = updatedPin.coordinate
+                            selectedPinForPreview = nil
+                            showingImagePicker = true
+                        }
                         .padding()
 
-                    if pin.images.isEmpty {
-                        Text("No photos yet.")
-                            .foregroundColor(.gray)
-                    } else {
-                        ForEach(pin.images.indices, id: \.self) { index in
-                            Image(uiImage: pin.images[index])
-                                .resizable()
-                                .scaledToFit()
-                                .padding()
+                        Spacer()
+                    }
+                    .navigationTitle("Photos")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") {
+                                selectedPinForPreview = nil
+                            }
                         }
                     }
-
-                    Button("Add Photo") {
-                        selectedCoordinate = pin.coordinate
-                        selectedPinForPreview = nil // Close preview before showing picker
-                        showingImagePicker = true
-                    }
-                    .padding()
                 }
             }
         }
-        // When user picks an image, go to confirmation sheet
-        .onChange(of: pickedImage) { newValue in
+
+        .onChange(of: pickedImage) { oldValue, newValue in
             if newValue != nil {
                 showingConfirmImage = true
                 showingImagePicker = false
@@ -132,18 +130,23 @@ struct MapPage: View {
             abs($0.coordinate.latitude - coordinate.latitude) < 0.0005 &&
             abs($0.coordinate.longitude - coordinate.longitude) < 0.0005
         }) {
-            pins[index].images.append(image)  // Append new image
-            selectedPinForPreview = pins[index]
+            pins[index].images.append(image)
         } else {
-            // Should not happen since new pins created on tap already
             let newPin = Pin(coordinate: coordinate, images: [image])
             pins.append(newPin)
-            selectedPinForPreview = newPin
+        }
+
+        DispatchQueue.main.async {
+            selectedPinForPreview = pins.first(where: {
+                abs($0.coordinate.latitude - coordinate.latitude) < 0.0005 &&
+                abs($0.coordinate.longitude - coordinate.longitude) < 0.0005
+            })
         }
 
         pickedImage = nil
         selectedCoordinate = nil
     }
+
 }
 
 #Preview {
