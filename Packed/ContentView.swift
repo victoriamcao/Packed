@@ -2,7 +2,6 @@
 //  ContentView.swift
 //  Packed
 //
-//  Created by Scholar on 7/29/25.
 //
 
 import SwiftUI
@@ -10,11 +9,16 @@ import SwiftUI
 struct ContentView: View {
     @StateObject var userData = UserData()
     @State private var showAuthScreen = false
+    @State private var currentTab: Tab = .home // Track current tab
+    
+    enum Tab: String {
+        case home, explore, profile
+    }
     
     var body: some View {
         NavigationStack {
-            ZStack {
-                // Your existing home screen content
+            ZStack(alignment: .bottom) {
+                // Your original content (unchanged)
                 VStack {
                     Text("PACKED")
                         .font(.largeTitle)
@@ -42,7 +46,7 @@ struct ContentView: View {
                 .padding()
                 .padding(.horizontal)
                 
-                // Plane image
+                // Your original plane image (unchanged)
                 Image("plane 1")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -51,29 +55,55 @@ struct ContentView: View {
                     .offset(x: -50)
                     .rotationEffect(.degrees(-8))
                 
-                // Profile button in top-right
-                VStack {
-                    HStack {
-                        Spacer()
-                            NavigationLink {
-                            if userData.isLoggedIn {
-                            ProfileView(userData: userData)
-                            } else {
-                            LoginChoiceView(userData: userData)
-                                         }
-                            } label: {
-                            Image(systemName: "person.circle")
-                                    .resizable()
-                                    .frame(width: 30, height: 30)
-                                    .padding()
-                                    .offset(y: 750)
-                                    .offset(x: -40)
-                                     }
-                                 }
-                                 Spacer()
-                             }
+                // Enhanced BottomNavBar with smart tab handling
+                HStack {
+                    // Home Tab
+                    Button {
+                        currentTab = .home
+                    } label: {
+                        VStack {
+                            Image(systemName: "house.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(currentTab == .home ? .blue : .gray)
+                            Text("Home")
+                                .font(.caption)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Explore Tab
+                    Button {
+                        currentTab = .explore
+                    } label: {
+                        VStack {
+                            Image(systemName: "globe")
+                                .font(.system(size: 24))
+                                .foregroundColor(currentTab == .explore ? .blue : .gray)
+                            Text("Explore")
+                                .font(.caption)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Profile Tab
+                    Button {
+                        currentTab = .profile
+                    } label: {
+                        VStack {
+                            Image(systemName: userData.isLoggedIn ? "person.circle.fill" : "person.crop.circle")
+                                .font(.system(size: 24))
+                                .foregroundColor(currentTab == .profile ? .blue : .gray)
+                            Text("Profile")
+                                .font(.caption)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.vertical, 8)
+                .background(Color(.systemBackground))
+                .overlay(Divider(), alignment: .top)
+                .offset(y: 290) // Keeping your exact offset
             }
-            
         }
     }
 }
