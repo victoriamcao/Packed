@@ -71,8 +71,6 @@ struct MapPage: View {
             }
         }
         .fullScreenCover(item: $selectedPinForPreview) { pin in
-            let updatedPin = pins.first(where: { $0.id == pin.id }) ?? pin
-
             NavigationView {
                 ScrollView {
                     VStack {
@@ -80,13 +78,13 @@ struct MapPage: View {
                             .font(.headline)
                             .padding()
 
-                        if updatedPin.images.isEmpty {
+                        if pin.images.isEmpty {
                             Text("No photos yet.")
                                 .foregroundColor(.gray)
                                 .padding()
                         } else {
-                            ForEach(updatedPin.images.indices, id: \.self) { index in
-                                Image(uiImage: updatedPin.images[index])
+                            ForEach(pin.images.indices, id: \.self) { index in
+                                Image(uiImage: pin.images[index])
                                     .resizable()
                                     .scaledToFit()
                                     .cornerRadius(10)
@@ -95,7 +93,7 @@ struct MapPage: View {
                         }
 
                         Button("Add Photo") {
-                            selectedCoordinate = updatedPin.coordinate
+                            selectedCoordinate = pin.coordinate
                             selectedPinForPreview = nil
                             showingImagePicker = true
                         }
@@ -114,7 +112,6 @@ struct MapPage: View {
                 }
             }
         }
-
         .onChange(of: pickedImage) { oldValue, newValue in
             if newValue != nil {
                 showingConfirmImage = true
@@ -126,27 +123,30 @@ struct MapPage: View {
     private func addPinWithImage() {
         guard let coordinate = selectedCoordinate, let image = pickedImage else { return }
 
+        // Find the pin by coordinate and add the image
         if let index = pins.firstIndex(where: {
             abs($0.coordinate.latitude - coordinate.latitude) < 0.0005 &&
             abs($0.coordinate.longitude - coordinate.longitude) < 0.0005
         }) {
             pins[index].images.append(image)
+            
+            // Automatically show the updated pin
+            DispatchQueue.main.async {
+                selectedPinForPreview = pins[index]
+            }
         } else {
+            // Create new pin with image
             let newPin = Pin(coordinate: coordinate, images: [image])
             pins.append(newPin)
-        }
-
-        DispatchQueue.main.async {
-            selectedPinForPreview = pins.first(where: {
-                abs($0.coordinate.latitude - coordinate.latitude) < 0.0005 &&
-                abs($0.coordinate.longitude - coordinate.longitude) < 0.0005
-            })
+            
+            DispatchQueue.main.async {
+                selectedPinForPreview = newPin
+            }
         }
 
         pickedImage = nil
         selectedCoordinate = nil
     }
-
 }
 
 #Preview {
