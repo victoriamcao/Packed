@@ -30,6 +30,7 @@ struct ContentView: View {
                         .foregroundColor(Color("darkBlue"))
                         .offset(y: -100)
                     
+                    
                     NavigationLink(destination: SurveryPage(savedLists: savedLists)) {
                         Text("Create Packing List")
                             .font(.title)
