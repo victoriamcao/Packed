@@ -12,6 +12,8 @@ struct SurveryPage: View {
     @State private var selectedGender = "I prefer not to say"
     @State private var selectedWeather = "Sunny"
     @State private var selectedLength = 1
+    @State private var destination: String = ""
+    @State private var travelDate: Date = Date()
     @ObservedObject var savedLists: SavedLists // Add this line to receive the SavedLists instance
     
     var body: some View {
@@ -65,7 +67,45 @@ struct SurveryPage: View {
                     .padding(.top, 8.0)
                 }
                 .padding(.bottom)
-                
+
+                // Destination field (used to look up historical weather for the trip)
+                Text("DESTINATION")
+                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
+                ZStack {
+                    Rectangle()
+                        .foregroundColor(Color("buttonGray"))
+                        .frame(width: 350, height: 50)
+                        .cornerRadius(10)
+                    TextField("City, Country", text: $destination)
+                        .padding(.horizontal)
+                        .autocorrectionDisabled()
+                }
+                .padding(.top, 8.0)
+                .padding(.bottom)
+
+                // Travel date (paired with destination to fetch historical averages)
+                Text("TRAVEL DATE")
+                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
+                ZStack {
+                    Rectangle()
+                        .foregroundColor(Color("buttonGray"))
+                        .frame(width: 350, height: 50)
+                        .cornerRadius(10)
+                    DatePicker("", selection: $travelDate, displayedComponents: .date)
+                        .labelsHidden()
+                        .datePickerStyle(.compact)
+                        .padding(.horizontal)
+                }
+                .padding(.top, 8.0)
+                .padding(.bottom)
+
+                Text("If a destination is entered, Packed looks up the historical weather average for that date and uses it to suggest clothing. Otherwise it falls back to the weather picked below.")
+                    .font(.caption)
+                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
+                    .multilineTextAlignment(.center)
+                    .frame(width: 350)
+                    .padding(.bottom)
+
                 // Weather button
                 Text("WEATHER")
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
@@ -198,6 +238,8 @@ struct SurveryPage: View {
                     selectedGender: selectedGender,
                     selectedWeather: selectedWeather,
                     selectedLength: selectedLength,
+                    destination: destination,
+                    travelDate: travelDate,
                     savedLists: savedLists // Pass the SavedLists instance here
                 )) {
                     ZStack {
