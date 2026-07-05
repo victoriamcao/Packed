@@ -12,12 +12,17 @@ struct ListPage: View {
     var selectedGender: String
     var selectedWeather: String
     var selectedLength: Int
+    var destination: String = ""
+    var travelDate: Date = Date()
     @ObservedObject var savedLists: SavedLists
     @State private var vacationName: String = ""
     @State private var newItem: String = ""
     // Add the state variable to track the swiped item
     @State private var swipedItemId: UUID?
     @State private var items: [PackingItem] = []
+    // Historical weather average for the destination + travel date, when available.
+    @State private var historicalWeather: HistoricalWeatherSummary?
+    @State private var isLoadingWeather: Bool = false
     
     @Environment(\.dismiss) var dismiss
     
@@ -33,6 +38,18 @@ struct ListPage: View {
                     .padding([.top, .leading, .bottom])
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
+
+                if isLoadingWeather {
+                    Text("Checking historical weather for \(destination)...")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 8)
+                } else if let historicalWeather {
+                    Text(historicalWeather.summaryText)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 8)
+                }
                 Divider()
                 
                 ScrollView {
@@ -195,13 +212,30 @@ struct ListPage: View {
             .padding(.top)
             .onAppear {
                 if items.isEmpty {
-                    // Use a Task to run the async function
                     Task {
-                        items = await ListItems.generatePackingList(
+                        let trimmedDestination = destination.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                        if !trimmedDestination.isEmpty {
+                            isLoadingWeather = true
+                            do {
+                                historicalWeather = try await WeatherService.fetchHistoricalAverage(
+                                    destination: trimmedDestination,
+                                    date: travelDate
+                                )
+                            } catch {
+                                // Fall back silently to the manually selected weather
+                                // (e.g. offline, unknown destination, or API hiccup).
+                                historicalWeather = nil
+                            }
+                            isLoadingWeather = false
+                        }
+
+                        items = ListItems.generatePackingList(
                             type: selectedType,
                             gender: selectedGender,
                             weather: selectedWeather,
-                            length: selectedLength
+                            length: selectedLength,
+                            historicalWeather: historicalWeather
                         )
                         // Pre-fill the vacation name based on selections
                         vacationName = "\(selectedType) - \(selectedLength) Day(s)"

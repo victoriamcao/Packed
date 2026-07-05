@@ -28,7 +28,8 @@ class ListItems {
         type: String,
         gender: String,
         weather: String,
-        length: Int
+        length: Int,
+        historicalWeather: HistoricalWeatherSummary? = nil
     ) -> [PackingItem] {
         var items: [PackingItem] = []
         
@@ -68,8 +69,13 @@ class ListItems {
             }
         }
         
-        // Weather-based Clothing
-        if weather == "Sunny" {
+        // Weather-based Clothing.
+        // If we have a real historical average for the destination + travel date,
+        // use it to pick clothing by temperature/precipitation/wind instead of the
+        // coarse manual "weather" label. Otherwise fall back to the manual pick.
+        if let historicalWeather {
+            addWeatherAppropriateClothing(for: historicalWeather, add: add)
+        } else if weather == "Sunny" {
             ["Sunglasses", "Sunscreen", "Hat"].forEach {
                 add($0, category: "Clothing")
             }
@@ -79,6 +85,14 @@ class ListItems {
             }
         } else if weather == "Cloudy" || weather == "Cold" {
             ["Jacket", "Gloves", "Thermals", "Beanie"].forEach {
+                add($0, category: "Clothing")
+            }
+        } else if weather == "Windy" {
+            ["Windbreaker", "Hat with chin strap"].forEach {
+                add($0, category: "Clothing")
+            }
+        } else if weather == "Snowy" {
+            ["Snow boots", "Heavy winter coat", "Gloves", "Beanie"].forEach {
                 add($0, category: "Clothing")
             }
         }
@@ -167,5 +181,53 @@ class ListItems {
         addWithQuantity("Pajama sets", quantity: pajamasCount, category: "Clothing")
         
         return items
+    }
+
+    /// Picks clothing based on the historical average high/low temperature and
+    /// precipitation/snowfall/wind for the destination on the travel date,
+    /// rather than a single coarse weather label.
+    private static func addWeatherAppropriateClothing(
+        for weather: HistoricalWeatherSummary,
+        add: (String, String) -> Void
+    ) {
+        let highC = weather.averageHighC
+
+        // Temperature bands drive the base layers.
+        if highC >= 27 {
+            ["Sunglasses", "Sunscreen", "Hat", "Lightweight breathable clothing"].forEach {
+                add($0, category: "Clothing")
+            }
+        } else if highC >= 18 {
+            ["Sunglasses", "Light layers", "Light jacket for the evening"].forEach {
+                add($0, category: "Clothing")
+            }
+        } else if highC >= 10 {
+            ["Jacket", "Long sleeve shirts", "Light sweater"].forEach {
+                add($0, category: "Clothing")
+            }
+        } else if highC >= 0 {
+            ["Warm jacket", "Sweaters", "Gloves", "Beanie", "Thermals"].forEach {
+                add($0, category: "Clothing")
+            }
+        } else {
+            ["Heavy winter coat", "Insulated gloves", "Thermal base layers", "Wool socks", "Beanie"].forEach {
+                add($0, category: "Clothing")
+            }
+        }
+
+        // Precipitation, snow, and wind add on top of the temperature-driven base layers.
+        if weather.averageSnowfallCM >= 0.5 {
+            ["Snow boots", "Waterproof gloves"].forEach {
+                add($0, category: "Clothing")
+            }
+        } else if weather.averagePrecipitationMM >= 4.0 {
+            ["Raincoat", "Umbrella", "Waterproof shoes"].forEach {
+                add($0, category: "Clothing")
+            }
+        }
+
+        if weather.averageWindSpeedKMH >= 25 {
+            add("Windbreaker", category: "Clothing")
+        }
     }
 }
