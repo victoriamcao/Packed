@@ -11,11 +11,12 @@ import UIKit
 import Combine
 
 class Pin: Identifiable, ObservableObject, Equatable {
-    let id = UUID()
+    let id: UUID
     let coordinate: CLLocationCoordinate2D
     @Published var images: [UIImage] = []
 
-    init(coordinate: CLLocationCoordinate2D, images: [UIImage] = []) {
+    init(id: UUID = UUID(), coordinate: CLLocationCoordinate2D, images: [UIImage] = []) {
+        self.id = id
         self.coordinate = coordinate
         self.images = images
     }

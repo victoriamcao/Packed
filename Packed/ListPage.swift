@@ -23,6 +23,9 @@ struct ListPage: View {
     // Historical weather average for the destination + travel date, when available.
     @State private var historicalWeather: HistoricalWeatherSummary?
     @State private var isLoadingWeather: Bool = false
+    // Whether the current list came from the Claude-powered generator.
+    @State private var isGeneratingList: Bool = false
+    @State private var usedAIGeneration: Bool = false
     
     @Environment(\.dismiss) var dismiss
     
@@ -40,12 +43,24 @@ struct ListPage: View {
                     .multilineTextAlignment(.center)
 
                 if isLoadingWeather {
-                    Text("Checking historical weather for \(destination)...")
+                    Text("Checking weather for \(destination)...")
                         .font(.caption)
                         .foregroundColor(.gray)
                         .padding(.bottom, 8)
                 } else if let historicalWeather {
                     Text(historicalWeather.summaryText)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 8)
+                }
+
+                if isGeneratingList {
+                    Text("Generating your smart packing list...")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 8)
+                } else if usedAIGeneration {
+                    Text("✨ AI-personalized packing list")
                         .font(.caption)
                         .foregroundColor(.gray)
                         .padding(.bottom, 8)
@@ -218,7 +233,7 @@ struct ListPage: View {
                         if !trimmedDestination.isEmpty {
                             isLoadingWeather = true
                             do {
-                                historicalWeather = try await WeatherService.fetchHistoricalAverage(
+                                historicalWeather = try await WeatherService.fetchWeatherContext(
                                     destination: trimmedDestination,
                                     date: travelDate
                                 )
@@ -230,13 +245,31 @@ struct ListPage: View {
                             isLoadingWeather = false
                         }
 
-                        items = ListItems.generatePackingList(
-                            type: selectedType,
-                            gender: selectedGender,
-                            weather: selectedWeather,
-                            length: selectedLength,
-                            historicalWeather: historicalWeather
-                        )
+                        isGeneratingList = true
+                        do {
+                            items = try await ClaudePackingListService.generatePackingList(
+                                destination: trimmedDestination,
+                                tripType: selectedType,
+                                gender: selectedGender,
+                                travelDate: travelDate,
+                                lengthDays: selectedLength,
+                                weather: historicalWeather
+                            )
+                            usedAIGeneration = true
+                        } catch {
+                            // No API key configured, offline, or an API error -
+                            // fall back to the rule-based generator.
+                            items = ListItems.generatePackingList(
+                                type: selectedType,
+                                gender: selectedGender,
+                                weather: selectedWeather,
+                                length: selectedLength,
+                                historicalWeather: historicalWeather
+                            )
+                            usedAIGeneration = false
+                        }
+                        isGeneratingList = false
+
                         // Pre-fill the vacation name based on selections
                         vacationName = "\(selectedType) - \(selectedLength) Day(s)"
                     }

@@ -44,6 +44,15 @@ struct ProfileView: View {
                                 InfoRow(label: "Password", value: "••••••••", isSecure: true)
                             }
                         }
+
+                        Section(header: Text("AI Packing Assistant").font(.headline)) {
+                            NavigationLink(destination: APIKeySettingsView()) {
+                                InfoRow(
+                                    label: "Anthropic API Key",
+                                    value: APIKeyStore.load() == nil ? "Not set" : "Configured"
+                                )
+                            }
+                        }
                     }
                     .padding()
                     .background(Color(.systemBackground))
@@ -183,6 +192,38 @@ struct ChangePasswordView: View {
             return false
         }
         return true
+    }
+}
+
+// API Key Settings Subview
+struct APIKeySettingsView: View {
+    @Environment(\.dismiss) var dismiss
+    @State private var apiKey: String = APIKeyStore.load() ?? ""
+
+    var body: some View {
+        Form {
+            Section(header: Text("Anthropic API Key"), footer: Text("Packed uses your own Anthropic API key to generate AI-personalized packing lists. Your key is stored securely on this device and is never sent anywhere besides Anthropic's API. Without a key, Packed falls back to its built-in packing list rules.")) {
+                SecureField("sk-ant-...", text: $apiKey)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+            }
+
+            if !apiKey.isEmpty {
+                Button("Remove Key", role: .destructive) {
+                    APIKeyStore.clear()
+                    apiKey = ""
+                }
+            }
+        }
+        .navigationTitle("AI Packing Assistant")
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    APIKeyStore.save(apiKey)
+                    dismiss()
+                }
+            }
+        }
     }
 }
 

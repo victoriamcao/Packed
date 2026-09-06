@@ -195,39 +195,39 @@ class ListItems {
         // Temperature bands drive the base layers.
         if highC >= 27 {
             ["Sunglasses", "Sunscreen", "Hat", "Lightweight breathable clothing"].forEach {
-                add($0, category: "Clothing")
+                add($0, "Clothing")
             }
         } else if highC >= 18 {
             ["Sunglasses", "Light layers", "Light jacket for the evening"].forEach {
-                add($0, category: "Clothing")
+                add($0, "Clothing")
             }
         } else if highC >= 10 {
             ["Jacket", "Long sleeve shirts", "Light sweater"].forEach {
-                add($0, category: "Clothing")
+                add($0, "Clothing")
             }
         } else if highC >= 0 {
             ["Warm jacket", "Sweaters", "Gloves", "Beanie", "Thermals"].forEach {
-                add($0, category: "Clothing")
+                add($0, "Clothing")
             }
         } else {
             ["Heavy winter coat", "Insulated gloves", "Thermal base layers", "Wool socks", "Beanie"].forEach {
-                add($0, category: "Clothing")
+                add($0, "Clothing")
             }
         }
 
         // Precipitation, snow, and wind add on top of the temperature-driven base layers.
         if weather.averageSnowfallCM >= 0.5 {
             ["Snow boots", "Waterproof gloves"].forEach {
-                add($0, category: "Clothing")
+                add($0, "Clothing")
             }
         } else if weather.averagePrecipitationMM >= 4.0 {
             ["Raincoat", "Umbrella", "Waterproof shoes"].forEach {
-                add($0, category: "Clothing")
+                add($0, "Clothing")
             }
         }
 
         if weather.averageWindSpeedKMH >= 25 {
-            add("Windbreaker", category: "Clothing")
+            add("Windbreaker", "Clothing")
         }
     }
 }

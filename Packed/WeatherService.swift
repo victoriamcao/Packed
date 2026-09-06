@@ -35,6 +35,9 @@ struct HistoricalWeatherSummary: Equatable {
     let averageSnowfallCM: Double
     let averageWindSpeedKMH: Double
     let yearsSampled: Int
+    /// True when this summary comes from the live forecast API (a specific
+    /// predicted day) rather than an average of past years.
+    var isForecast: Bool = false
 
     var averageHighF: Double { averageHighC * 9.0 / 5.0 + 32.0 }
     var averageLowF: Double { averageLowC * 9.0 / 5.0 + 32.0 }
@@ -61,6 +64,9 @@ struct HistoricalWeatherSummary: Equatable {
     var summaryText: String {
         let high = Int(averageHighF.rounded())
         let low = Int(averageLowF.rounded())
+        if isForecast {
+            return "\(locationName): forecast \(low)°F–\(high)°F on this date"
+        }
         return "\(locationName): historically \(low)°F–\(high)°F on this date (\(yearsSampled)-yr avg)"
     }
 }
@@ -95,12 +101,79 @@ enum WeatherService {
 
     private static let geocodeEndpoint = "https://geocoding-api.open-meteo.com/v1/search"
     private static let archiveEndpoint = "https://archive-api.open-meteo.com/v1/archive"
+    private static let forecastEndpoint = "https://api.open-meteo.com/v1/forecast"
 
     /// How many past years to sample when computing the historical average.
     /// 10 years is a reasonable trade-off between accuracy and request volume.
     private static let defaultYearsOfHistory = 10
 
+    /// Open-Meteo's free forecast API only covers roughly the next two weeks.
+    /// Beyond that we fall back to the historical average instead.
+    private static let maxForecastDaysAhead = 16
+
     // MARK: - Public API
+
+    /// Fetches the best available weather context for a destination + date:
+    /// a live forecast when the date is within the forecast window, otherwise
+    /// the historical average for that calendar day.
+    static func fetchWeatherContext(destination: String, date: Date) async throws -> HistoricalWeatherSummary {
+        let daysAhead = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: Date()), to: Calendar.current.startOfDay(for: date)).day ?? Int.max
+
+        if daysAhead >= 0 && daysAhead <= maxForecastDaysAhead {
+            if let forecast = try? await fetchForecast(destination: destination, date: date) {
+                return forecast
+            }
+        }
+        return try await fetchHistoricalAverage(destination: destination, date: date)
+    }
+
+    /// Fetches the live forecast for a destination on a specific upcoming date.
+    static func fetchForecast(destination: String, date: Date) async throws -> HistoricalWeatherSummary {
+        let place = try await geocode(place: destination)
+        let calendar = Calendar(identifier: .gregorian)
+        let comps = calendar.dateComponents([.year, .month, .day], from: date)
+        guard let year = comps.year, let month = comps.month, let day = comps.day,
+              let dateString = isoDateString(year: year, month: month, day: day) else {
+            throw WeatherServiceError.invalidResponse
+        }
+
+        guard var components = URLComponents(string: forecastEndpoint) else {
+            throw WeatherServiceError.invalidResponse
+        }
+        components.queryItems = [
+            URLQueryItem(name: "latitude", value: String(place.latitude)),
+            URLQueryItem(name: "longitude", value: String(place.longitude)),
+            URLQueryItem(name: "start_date", value: dateString),
+            URLQueryItem(name: "end_date", value: dateString),
+            URLQueryItem(
+                name: "daily",
+                value: "temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum,windspeed_10m_max"
+            ),
+            URLQueryItem(name: "timezone", value: "auto")
+        ]
+        guard let url = components.url else { throw WeatherServiceError.invalidResponse }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let decoded = try JSONDecoder().decode(ArchiveResponse.self, from: data)
+        guard let daily = decoded.daily, !daily.time.isEmpty,
+              let highC = daily.temperature_2m_max.first ?? nil,
+              let lowC = daily.temperature_2m_min.first ?? nil else {
+            throw WeatherServiceError.noHistoricalData
+        }
+
+        return HistoricalWeatherSummary(
+            locationName: place.name,
+            month: month,
+            day: day,
+            averageHighC: highC,
+            averageLowC: lowC,
+            averagePrecipitationMM: daily.precipitation_sum.first.flatMap { $0 } ?? 0,
+            averageSnowfallCM: daily.snowfall_sum.first.flatMap { $0 } ?? 0,
+            averageWindSpeedKMH: daily.windspeed_10m_max.first.flatMap { $0 } ?? 0,
+            yearsSampled: 1,
+            isForecast: true
+        )
+    }
 
     /// Resolves a free-text destination (city, "City, Country", landmark, etc.)
     /// into coordinates using Open-Meteo's geocoding service.
