@@ -115,21 +115,40 @@ enum WeatherService {
 
     /// Fetches the best available weather context for a destination + date:
     /// a live forecast when the date is within the forecast window, otherwise
-    /// the historical average for that calendar day.
+    /// the historical average for that calendar day. Geocodes the
+    /// destination once and reuses it for both attempts.
     static func fetchWeatherContext(destination: String, date: Date) async throws -> HistoricalWeatherSummary {
+        let place = try await geocode(place: destination)
         let daysAhead = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: Date()), to: Calendar.current.startOfDay(for: date)).day ?? Int.max
 
         if daysAhead >= 0 && daysAhead <= maxForecastDaysAhead {
-            if let forecast = try? await fetchForecast(destination: destination, date: date) {
-                return forecast
+            do {
+                return try await fetchForecast(for: place, date: date)
+            } catch {
+                // Only the forecast attempt is skipped silently - a request-level
+                // failure here (network, decode, schema change) still falls
+                // through to historical, but is logged so a systematic forecast
+                // outage doesn't go unnoticed indefinitely.
+                print("Packed: live forecast fetch failed for \(place.name), falling back to historical average: \(error)")
             }
         }
-        return try await fetchHistoricalAverage(destination: destination, date: date)
+
+        let calendar = Calendar(identifier: .gregorian)
+        let comps = calendar.dateComponents([.month, .day], from: date)
+        guard let month = comps.month, let day = comps.day else {
+            throw WeatherServiceError.invalidResponse
+        }
+        return try await fetchHistoricalAverage(for: place, month: month, day: day)
     }
 
     /// Fetches the live forecast for a destination on a specific upcoming date.
     static func fetchForecast(destination: String, date: Date) async throws -> HistoricalWeatherSummary {
         let place = try await geocode(place: destination)
+        return try await fetchForecast(for: place, date: date)
+    }
+
+    /// Same as above, but for a location that has already been geocoded.
+    static func fetchForecast(for place: GeocodedPlace, date: Date) async throws -> HistoricalWeatherSummary {
         let calendar = Calendar(identifier: .gregorian)
         let comps = calendar.dateComponents([.year, .month, .day], from: date)
         guard let year = comps.year, let month = comps.month, let day = comps.day,
@@ -314,19 +333,15 @@ enum WeatherService {
         )
     }
 
+    /// Formats year/month/day directly as "yyyy-MM-dd" with zero-padding,
+    /// with no Date/Calendar/TimeZone round-trip. Going through
+    /// Calendar.date(from:) (device-local midnight) and then a
+    /// UTC-formatted DateFormatter shifts the day by one for any user
+    /// east of UTC - e.g. a UTC+9 device's local midnight on the 10th is
+    /// already 15:00 UTC on the 9th, so a UTC formatter would print "09".
     private static func isoDateString(year: Int, month: Int, day: Int) -> String? {
-        var comps = DateComponents()
-        comps.year = year
-        comps.month = month
-        comps.day = day
-        let calendar = Calendar(identifier: .gregorian)
-        guard let date = calendar.date(from: comps) else { return nil }
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter.string(from: date)
+        guard (1...9999).contains(year), (1...12).contains(month), (1...31).contains(day) else { return nil }
+        return String(format: "%04d-%02d-%02d", year, month, day)
     }
 }
 

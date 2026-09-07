@@ -109,12 +109,13 @@ enum ClaudePackingListService {
     ) -> [String: Any] {
         [
             "model": model,
-            "max_tokens": 4096,
+            "max_tokens": 16000,
             "output_config": ["effort": "low"],
             "tools": [
                 [
                     "name": toolName,
                     "description": "Records the generated packing list.",
+                    "strict": true,
                     "input_schema": [
                         "type": "object",
                         "properties": [
@@ -126,11 +127,13 @@ enum ClaudePackingListService {
                                         "name": ["type": "string", "description": "The packing list item, including a quantity in the name if more than one is needed (e.g. \"3 T-shirts\")."],
                                         "category": ["type": "string", "description": "A short category label grouping related items (e.g. Essentials, Clothing, Toiletries & Personal Items, Hiking Gear)."]
                                     ],
-                                    "required": ["name", "category"]
+                                    "required": ["name", "category"],
+                                    "additionalProperties": false
                                 ]
                             ]
                         ],
-                        "required": ["items"]
+                        "required": ["items"],
+                        "additionalProperties": false
                     ]
                 ]
             ],

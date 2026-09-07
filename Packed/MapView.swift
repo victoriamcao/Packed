@@ -138,7 +138,7 @@ class PinAnnotation: NSObject, MKAnnotation {
     var coordinate: CLLocationCoordinate2D = CLLocationCoordinate2D()
     var title: String?
     var subtitle: String?
-    var pinId: UUID = UUID()
+    var pinId: String = UUID().uuidString
 }
 
 /// A Snap Map-style circular photo thumbnail annotation.

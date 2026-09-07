@@ -9,52 +9,51 @@ import SwiftUI
 
 struct LoginFormView: View {
     @ObservedObject var userData: UserData
-    @State private var username = ""
+    @EnvironmentObject var navigator: AppNavigator
+    @State private var email = ""
     @State private var password = ""
     @State private var errorMessage = ""
-    
-    // Simple fake user database for demo
-    private let validUsers = [
-        "john": ("John Doe", "password123"),
-        "sarah": ("Sarah Smith", "mypass456"),
-        "alex": ("Alex Johnson", "hello789")
-    ]
-    
+    @State private var isLoggingIn = false
+
     var body: some View {
-        NavigationStack {
+        ZStack(alignment: .bottom) {
             VStack(spacing: 20) {
                 Text("Log In")
                     .font(.largeTitle)
                     .bold()
-                
-                TextField("Username", text: $username)
+
+                TextField("Email", text: $email)
                     .textFieldStyle(.roundedBorder)
                     .padding(.horizontal)
+                    .keyboardType(.emailAddress)
                     .autocapitalization(.none)
-                
+                    .autocorrectionDisabled()
+
                 SecureField("Password", text: $password)
                     .textFieldStyle(.roundedBorder)
                     .padding(.horizontal)
-                
+
                 if !errorMessage.isEmpty {
                     Text(errorMessage)
                         .foregroundColor(.red)
                         .font(.caption)
                 }
-                
+
                 Button(action: loginUser) {
-                    Text("Log In")
+                    Text(isLoggingIn ? "Logging In..." : "Log In")
                         .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(!username.isEmpty && !password.isEmpty ? Color.blue : Color.gray)
+                        .background(!email.isEmpty && !password.isEmpty ? Color.blue : Color.gray)
                         .foregroundColor(.white)
                         .cornerRadius(10)
                         .padding(.horizontal)
                 }
-                .disabled(username.isEmpty || password.isEmpty)
-                
-                NavigationLink(destination: SignupFormView(userData: userData)) {
+                .disabled(email.isEmpty || password.isEmpty || isLoggingIn)
+
+                Button {
+                    navigator.push(.signup)
+                } label: {
                     HStack {
-                        Text("Forgot Password")
+                        Text("Don't have an account? Sign up")
                             .foregroundColor(Color.blue)
                         Image(systemName: "chevron.right")
                             .font(.system(size: 16))
@@ -63,38 +62,29 @@ struct LoginFormView: View {
                 }
             }
             .padding()
-            .navigationDestination(isPresented: .constant(userData.isLoggedIn)) {
-                ProfileView(userData: userData)
-            }
+            .padding(.bottom, 60)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            BottomNavBar(current: .profile)
         }
     }
-    
+
     private func loginUser() {
         errorMessage = ""
-        
-        guard !username.isEmpty else {
-            errorMessage = "Please enter your username"
-            return
-        }
-        
-        guard !password.isEmpty else {
-            errorMessage = "Please enter your password"
-            return
-        }
-        
-        if let user = validUsers[username.lowercased()] {
-            if password == user.1 {
-                // Successful login
-                userData.login(name: user.0, username: username.lowercased())
-            } else {
-                errorMessage = "Please use the right password"
+        isLoggingIn = true
+        Task {
+            do {
+                try await userData.login(email: email, password: password)
+                navigator.go(to: .profile)
+            } catch {
+                errorMessage = error.localizedDescription
             }
-        } else {
-            errorMessage = "Username not found. Please check your username or create an account."
+            isLoggingIn = false
         }
     }
 }
 
 #Preview {
     LoginFormView(userData: UserData())
+        .environmentObject(AppNavigator())
 }

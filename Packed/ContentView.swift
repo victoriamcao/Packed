@@ -7,31 +7,65 @@ import SwiftUI
 struct ContentView: View {
     @StateObject var savedLists = SavedLists()
     @StateObject var userData = UserData()
-    @State private var showAuthScreen = false
-    @State private var currentTab: Tab = .home
-    @State private var forceRefreshID = UUID()
-    
-    // Add these for navigation control
-    @State private var isShowingExplore = false
-    @State private var isShowingProfile = false
-    
-    enum Tab: String {
-        case home, explore, profile
-    }
-    
+    @StateObject var navigator = AppNavigator()
+
     var body: some View {
-        NavigationStack {
-            ZStack(alignment: .bottom) {
-                // Your original content (unchanged)
+        NavigationStack(path: $navigator.path) {
+            homeContent
+                .navigationDestination(for: AppDestination.self) { destination in
+                    switch destination {
+                    case .survey:
+                        SurveryPage(savedLists: savedLists)
+                    case .pastLists:
+                        PastLists(savedLists: savedLists)
+                    case .map:
+                        MapPage()
+                    case .profile:
+                        ProfileView(userData: userData)
+                    case .loginChoice:
+                        LoginChoiceView(userData: userData)
+                    case .listPage(let params):
+                        ListPage(
+                            selectedType: params.selectedType,
+                            selectedGender: params.selectedGender,
+                            selectedWeather: params.selectedWeather,
+                            selectedLength: params.selectedLength,
+                            destination: params.destination,
+                            travelDate: params.travelDate,
+                            savedLists: savedLists
+                        )
+                    case .listDetail(let list):
+                        ListDetailView(list: list, savedLists: savedLists)
+                    case .login:
+                        LoginFormView(userData: userData)
+                    case .signup:
+                        SignupFormView(userData: userData)
+                    case .changePassword:
+                        ChangePasswordView(userData: userData)
+                    case .apiKeySettings:
+                        APIKeySettingsView()
+                    }
+                }
+        }
+        .environmentObject(navigator)
+        .environmentObject(userData)
+    }
+
+    private var homeContent: some View {
+        ZStack(alignment: .bottom) {
+            ZStack {
+                Color.clear
+
                 VStack {
                     Text("PACKED")
                         .font(.largeTitle)
                         .fontWeight(.medium)
                         .foregroundColor(Color("darkBlue"))
                         .offset(y: -100)
-                    
-                    
-                    NavigationLink(destination: SurveryPage(savedLists: savedLists)) {
+
+                    Button {
+                        navigator.push(.survey)
+                    } label: {
                         Text("Create Packing List")
                             .font(.title)
                             .foregroundColor(Color.white)
@@ -39,8 +73,10 @@ struct ContentView: View {
                     .frame(maxWidth: 350, minHeight: 80)
                     .background(Color("lightBlue"))
                     .cornerRadius(30)
-                    
-                    NavigationLink(destination: PastLists(savedLists: savedLists)) {
+
+                    Button {
+                        navigator.push(.pastLists)
+                    } label: {
                         Text("View Past Lists")
                             .foregroundColor(Color("textGray"))
                     }
@@ -50,8 +86,7 @@ struct ContentView: View {
                 }
                 .padding()
                 .padding(.horizontal)
-                
-                // Plane image (unchanged)
+
                 Image("plane 1")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -59,96 +94,10 @@ struct ContentView: View {
                     .offset(y: 230)
                     .offset(x: -50)
                     .rotationEffect(.degrees(-8))
-                
-                // Bottom Navigation Bar
-                HStack {
-                    // Home Tab
-                    Button {
-                        if currentTab == .home {
-                            forceRefreshID = UUID()
-                        }
-                        currentTab = .home
-                        isShowingExplore = false
-                        isShowingProfile = false
-                    } label: {
-                        VStack (spacing: 4) {
-                            Image(systemName: "house.fill")
-                                .font(.system(size: 25))
-                                .foregroundColor(currentTab == .home ? .darkBlue : .textGray)
-                           
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                    }
-                    
-                    // Explore Tab
-                    Button {
-                        if currentTab == .explore {
-                            forceRefreshID = UUID()
-                        }
-                        currentTab = .explore
-                        isShowingExplore = true
-                        isShowingProfile = false
-                    } label: {
-                        VStack {
-                            Image(systemName: "globe")
-                                .font(.system(size: 25))
-                                .foregroundColor(currentTab == .explore ? .darkBlue : .textGray)
-                        
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                    }
-                    
-                    // Profile Tab
-                    Button {
-                        if currentTab == .profile {
-                            forceRefreshID = UUID()
-                        }
-                        currentTab = .profile
-                        isShowingExplore = false
-                        isShowingProfile = true
-                    } label: {
-                        VStack {
-                            Image(systemName: userData.isLoggedIn ? "person.circle.fill" : "person.crop.circle")
-                                .font(.system(size: 25))
-                                .foregroundColor(currentTab == .profile ? .darkBlue : .textGray)
-                           
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                    }
-                }
-                .padding(.vertical, 8)
-                .background(Color(.systemBackground))
-                .offset(y: 298)
-                
-                // Updated Hidden Navigation
-                Group {
-                    NavigationLink(
-                        destination: MapPage().id(forceRefreshID),
-                        isActive: $isShowingExplore,
-                        label: { EmptyView() }
-                    )
-                    
-                    NavigationLink(
-                        destination: userData.isLoggedIn ?
-                            AnyView(ProfileView(userData: userData).id(forceRefreshID)) :
-                            AnyView(LoginChoiceView(userData: userData).id(forceRefreshID)),
-                        isActive: $isShowingProfile,
-                        label: { EmptyView() }
-                    )
-                }
-                .onChange(of: currentTab) { newTab in
-                    // Reset navigation states when tab changes
-                    isShowingExplore = (newTab == .explore)
-                    isShowingProfile = (newTab == .profile)
-                }
             }
+
+            BottomNavBar(current: .home)
         }
-    .onAppear {
-        savedLists.loadFromStorage()
-            }
     }
 }
 #Preview {

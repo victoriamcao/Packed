@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SignupFormView: View {
     @ObservedObject var userData: UserData
+    @EnvironmentObject var navigator: AppNavigator
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
@@ -17,6 +18,7 @@ struct SignupFormView: View {
     @State private var canSignUp = false
     @State private var emailValid = false
     @State private var showEmailError = false
+    @State private var isSigningUp = false
 
     
     init(userData: UserData) {
@@ -24,7 +26,7 @@ struct SignupFormView: View {
     }
     
     var body: some View {
-        NavigationStack {
+        ZStack(alignment: .bottom) {
             VStack(spacing: 20) {
                 Text("Create Account")
                     .font(.largeTitle)
@@ -82,9 +84,9 @@ struct SignupFormView: View {
                         .font(.caption)
                         .foregroundColor(.gray)
                     
-                    RequirementView(met: password.count >= 8, text: "8+ characters")
-                    RequirementView(met: hasNumber(password), text: "Contains number")
-                    RequirementView(met: hasSpecialCharacter(password), text: "Special character (!@#$%^&*)")
+                    RequirementView(met: PasswordPolicy.hasMinimumLength(password), text: "8+ characters")
+                    RequirementView(met: PasswordPolicy.hasNumber(password), text: "Contains number")
+                    RequirementView(met: PasswordPolicy.hasSpecialCharacter(password), text: "Special character (!@#$%^&*)")
                     
                     // Email Validation Indicator
                     if !email.isEmpty {
@@ -107,17 +109,19 @@ struct SignupFormView: View {
                 
                 // Sign Up Button
                 Button(action: signUpUser) {
-                    Text("Sign Up")
+                    Text(isSigningUp ? "Creating Account..." : "Sign Up")
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(canSignUp ? Color.lightBlue : Color.gray)
                         .foregroundColor(.white)
                         .cornerRadius(10)
                         .padding(.horizontal)
                 }
-                .disabled(!canSignUp)
+                .disabled(!canSignUp || isSigningUp)
 
                 // Navigation to Login
-                NavigationLink(destination: LoginFormView(userData: userData)) {
+                Button {
+                    navigator.push(.login)
+                } label: {
                     HStack {
                         Text("I already have an account")
                             .foregroundColor(Color.blue)
@@ -131,16 +135,17 @@ struct SignupFormView: View {
             
             }
             .padding()
-            .navigationDestination(isPresented: .constant(userData.isLoggedIn && errorMessage.isEmpty)) {
-                ProfileView(userData: userData)
-            }
+            .padding(.bottom, 60)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            BottomNavBar(current: .profile)
         }
     }
     
     private func validateForm() {
         let nameValid = !name.isEmpty
         let usernameValid = !username.isEmpty && username.count >= 4
-        let passwordValid = isPasswordValid(password)
+        let passwordValid = PasswordPolicy.isValid(password)
         canSignUp = nameValid && emailValid && usernameValid && passwordValid
     }
     
@@ -173,13 +178,21 @@ struct SignupFormView: View {
             return
         }
         
-        guard isPasswordValid(password) else {
+        guard PasswordPolicy.isValid(password) else {
             errorMessage = "Password doesn't meet all requirements"
             return
         }
-        
-        // Successful signup
-        userData.login(name: name, username: username)
+
+        isSigningUp = true
+        Task {
+            do {
+                try await userData.signUp(name: name, username: username, email: email, password: password)
+                navigator.go(to: .profile)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isSigningUp = false
+        }
     }
     
     // Improved email validation
@@ -188,22 +201,11 @@ struct SignupFormView: View {
         let emailPredicate = NSPredicate(format:"SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
     }
-    
-    private func isPasswordValid(_ password: String) -> Bool {
-        password.count >= 8 && hasNumber(password) && hasSpecialCharacter(password)
-    }
-    
-    private func hasNumber(_ string: String) -> Bool {
-        string.rangeOfCharacter(from: .decimalDigits) != nil
-    }
-    
-    private func hasSpecialCharacter(_ string: String) -> Bool {
-        string.rangeOfCharacter(from: CharacterSet(charactersIn: "!@#$%^&*")) != nil
-    }
 }
 
-// Reusable Requirement View
-private struct RequirementView: View {
+// Reusable Requirement View - shows a checkmark/x that flips red -> green
+// live as the requirement becomes met. Shared with ChangePasswordView.
+struct RequirementView: View {
     let met: Bool
     let text: String
     
@@ -215,9 +217,11 @@ private struct RequirementView: View {
                 .font(.caption)
                 .foregroundColor(met ? .green : .red)
         }
+        .animation(.easeInOut(duration: 0.2), value: met)
     }
 }
 
 #Preview {
     SignupFormView(userData: UserData())
+        .environmentObject(AppNavigator())
 }

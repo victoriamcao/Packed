@@ -8,28 +8,85 @@
 import SwiftUI
 
 struct SurveryPage: View {
+    @EnvironmentObject var navigator: AppNavigator
+
     @State private var selectedType = "Tropical Vacation"
     @State private var selectedGender = "I prefer not to say"
-    @State private var selectedWeather = "Sunny"
-    @State private var selectedLength = 1
     @State private var destination: String = ""
-    @State private var travelDate: Date = Date()
-    @ObservedObject var savedLists: SavedLists // Add this line to receive the SavedLists instance
-    
+    // Tap-to-select date range (e.g. Sep 3-7) replaces a separate
+    // start-date + day-count picker. Starts nil so the very first tap on
+    // the calendar is treated as "start a fresh selection" rather than
+    // being read as setting an end date against a pre-seeded start.
+    @State private var tripStartDate: Date?
+    @State private var tripEndDate: Date?
+    @ObservedObject var savedLists: SavedLists
+
+    private var resolvedStartDate: Date { tripStartDate ?? Date() }
+
+    private var tripLengthDays: Int {
+        guard let start = tripStartDate else { return 1 }
+        let end = tripEndDate ?? start
+        let days = Calendar.current.dateComponents(
+            [.day],
+            from: Calendar.current.startOfDay(for: start),
+            to: Calendar.current.startOfDay(for: end)
+        ).day ?? 0
+        return max(1, days + 1)
+    }
+
+    private var tripDatesSummary: String {
+        guard let start = tripStartDate else { return "Select trip dates" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        guard let end = tripEndDate, !Calendar.current.isDate(end, inSameDayAs: start) else {
+            return "1 day • \(formatter.string(from: start))"
+        }
+        return "\(tripLengthDays) days • \(formatter.string(from: start)) - \(formatter.string(from: end))"
+    }
+
+    /// Only used as a last-resort fallback (no destination weather data AND
+    /// the AI generator unavailable) - a trip-type-informed guess reads
+    /// better than always assuming sunny, e.g. for a Ski Trip.
+    private var fallbackWeatherLabel: String {
+        switch selectedType {
+        case "Ski Trip":
+            return "Snowy"
+        case "Mountain Vacation":
+            return "Cold"
+        case "Business Trip", "City Vacation":
+            return "Cloudy"
+        default:
+            return "Sunny"
+        }
+    }
+
     var body: some View {
-        NavigationStack {
-            VStack {
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 6) {
+                HStack {
+                    Button {
+                        navigator.goBack()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                        .foregroundColor(Color("lightBlue"))
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.top, 12)
+
                 Text("Create New List")
-                    .font(.largeTitle)
+                    .font(.title)
                     .fontWeight(.semibold)
                     .foregroundColor(Color(red: 0.195, green: 0.648, blue: 0.859))
-                    .padding(.top, 75.0)
-                    .padding(.bottom, 35.0)
-                
-                Spacer()
-                
+                    .padding(.bottom, 8.0)
+
                 // Type of Vacation button
                 Text("TYPE OF VACATION")
+                    .font(.caption)
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
                 Menu {
                     Button(action: { selectedType = "Tropical Vacation" }) {
@@ -51,155 +108,56 @@ struct SurveryPage: View {
                     ZStack {
                         Rectangle()
                             .foregroundColor(Color("buttonGray"))
-                            .frame(width: 350, height: 50)
+                            .frame(width: 350, height: 44)
                             .cornerRadius(10)
-                        
+
                         Label(
                             title: {Text(selectedType)
                                 .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
                                 .padding(.all)},
                             icon: {Image("arrow")
                                 .resizable()
-                                .frame(width: 37, height: 30)
+                                .frame(width: 30, height: 24)
                             }
                         )
                     }
-                    .padding(.top, 8.0)
                 }
-                .padding(.bottom)
+                .padding(.bottom, 6)
 
-                // Destination field (used to look up historical weather for the trip)
+                // Destination field (used to look up real weather for the trip)
                 Text("DESTINATION")
-                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
-                ZStack {
-                    Rectangle()
-                        .foregroundColor(Color("buttonGray"))
-                        .frame(width: 350, height: 50)
-                        .cornerRadius(10)
-                    TextField("City, Country", text: $destination)
-                        .padding(.horizontal)
-                        .autocorrectionDisabled()
-                }
-                .padding(.top, 8.0)
-                .padding(.bottom)
-
-                // Travel date (paired with destination to fetch historical averages)
-                Text("TRAVEL DATE")
-                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
-                ZStack {
-                    Rectangle()
-                        .foregroundColor(Color("buttonGray"))
-                        .frame(width: 350, height: 50)
-                        .cornerRadius(10)
-                    DatePicker("", selection: $travelDate, displayedComponents: .date)
-                        .labelsHidden()
-                        .datePickerStyle(.compact)
-                        .padding(.horizontal)
-                }
-                .padding(.top, 8.0)
-                .padding(.bottom)
-
-                Text("If a destination is entered, Packed looks up the historical weather average for that date and uses it to suggest clothing. Otherwise it falls back to the weather picked below.")
                     .font(.caption)
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
-                    .multilineTextAlignment(.center)
-                    .frame(width: 350)
-                    .padding(.bottom)
+                ZStack {
+                    Rectangle()
+                        .foregroundColor(Color("buttonGray"))
+                        .frame(width: 350, height: 44)
+                        .cornerRadius(10)
+                    TextField("City, Country", text: $destination)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .autocorrectionDisabled()
+                        .frame(width: 350)
+                }
+                .padding(.bottom, 6)
 
-                // Weather button
-                Text("WEATHER")
+                // Trip dates - tap a start day, then an end day; everything
+                // between is selected automatically. The destination's real
+                // weather (fetched separately) replaces the need to manually
+                // pick a weather condition here.
+                Text("TRIP DATES")
+                    .font(.caption)
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
-                Menu {
-                    Button(action: { selectedWeather = "Sunny" }) {
-                        Text("Sunny")
-                    }
-                    Button(action: { selectedWeather = "Rainy" }) {
-                        Text("Rainy")
-                    }
-                    Button(action: { selectedWeather = "Cloudy" }) {
-                        Text("Cloudy")
-                    }
-                    Button(action: { selectedWeather = "Foggy" }) {
-                        Text("Foggy")
-                    }
-                    Button(action: { selectedWeather = "Windy" }) {
-                        Text("Windy")
-                    }
-                    Button(action: { selectedWeather = "Snowy" }) {
-                        Text("Snowy")
-                    }
-                } label: {
-                    ZStack {
-                        Rectangle()
-                            .foregroundColor(Color("buttonGray"))
-                            .frame(width: 350, height: 50)
-                            .cornerRadius(10)
-                        
-                        Label(
-                            title: {Text(selectedWeather)
-                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
-                                .padding(.all)},
-                            icon: {Image("arrow")
-                                .resizable()
-                                .frame(width: 37, height: 30)
-                            }
-                        )
-                    }
-                    .padding(.top, 8.0)
-                }
-                .padding(.bottom)
-                
-                // Length of Vacation button
-                Text("LENGTH OF VACATION")
+                RangeCalendarView(startDate: $tripStartDate, endDate: $tripEndDate)
+                    .frame(width: 350)
+                Text(tripDatesSummary)
+                    .font(.caption)
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
-                Menu {
-                    Button(action: { selectedLength = 1 }) {
-                        Text("1 Day")
-                    }
-                    Button(action: { selectedLength = 2 }) {
-                        Text("2 Days")
-                    }
-                    Button(action: { selectedLength = 3 }) {
-                        Text("3 Days")
-                    }
-                    Button(action: { selectedLength = 4 }) {
-                        Text("4 Days")
-                    }
-                    Button(action: { selectedLength = 5 }) {
-                        Text("5 Days")
-                    }
-                    Button(action: { selectedLength = 6 }) {
-                        Text("6 Days")
-                    }
-                    Button(action: { selectedLength = 7 }) {
-                        Text("7 Days")
-                    }
-                    Button(action: { selectedLength = 8 }) {
-                        Text("8+ Days")
-                    }
-                } label: {
-                    ZStack {
-                        Rectangle()
-                            .foregroundColor(Color("buttonGray"))
-                            .frame(width: 350, height: 50)
-                            .cornerRadius(10)
-                        
-                        Label(
-                            title: {Text("\(selectedLength) Day(s)")
-                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
-                                .padding(.all)},
-                            icon: {Image("arrow")
-                                .resizable()
-                                .frame(width: 37, height: 30)
-                            }
-                        )
-                    }
-                    .padding(.top, 8.0)
-                }
-                .padding(.bottom)
-                
+                    .padding(.bottom, 4)
+
                 // Gender button
                 Text("GENDER")
+                    .font(.caption)
                     .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
                 Menu {
                     Button(action: { selectedGender = "I prefer not to say" }) {
@@ -215,50 +173,54 @@ struct SurveryPage: View {
                     ZStack {
                         Rectangle()
                             .foregroundColor(Color("buttonGray"))
-                            .frame(width: 350, height: 50)
+                            .frame(width: 350, height: 44)
                             .cornerRadius(10)
-                        
+
                         Label(
                             title: {Text(selectedGender)
                                 .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
                                 .padding(.all)},
                             icon: {Image("arrow")
                                 .resizable()
-                                .frame(width: 37, height: 30)
+                                .frame(width: 30, height: 24)
                             }
                         )
                     }
-                    .padding(.bottom)
                 }
-                
-                Spacer()
-                
-                NavigationLink(destination: ListPage(
-                    selectedType: selectedType,
-                    selectedGender: selectedGender,
-                    selectedWeather: selectedWeather,
-                    selectedLength: selectedLength,
-                    destination: destination,
-                    travelDate: travelDate,
-                    savedLists: savedLists // Pass the SavedLists instance here
-                )) {
+
+                Button {
+                    navigator.push(.listPage(ListPageParams(
+                        selectedType: selectedType,
+                        selectedGender: selectedGender,
+                        selectedWeather: fallbackWeatherLabel,
+                        selectedLength: tripLengthDays,
+                        destination: destination,
+                        travelDate: resolvedStartDate
+                    )))
+                } label: {
                     ZStack {
                         Rectangle()
                             .foregroundColor(Color("lightBlue"))
-                            .frame(width: 350, height: 50)
+                            .frame(width: 350, height: 46)
                             .cornerRadius(10)
                         Text("Create")
-                            .font(.title2)
+                            .font(.title3)
                             .foregroundColor(Color.white)
                     }
                 }
-                
-                Spacer()
+                .padding(.top, 10)
             }
+            .padding(.bottom, 70)
+            .frame(maxHeight: .infinity, alignment: .top)
+
+            BottomNavBar(current: .home)
         }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
 #Preview {
-    SurveryPage(savedLists: SavedLists()) // Update the preview to include SavedLists
+    SurveryPage(savedLists: SavedLists())
+        .environmentObject(AppNavigator())
+        .environmentObject(UserData())
 }

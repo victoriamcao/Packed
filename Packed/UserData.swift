@@ -1,88 +1,120 @@
-import Security
 import Foundation
 import SwiftUI
 
+enum UserDataError: LocalizedError {
+    case notLoggedIn
+
+    var errorDescription: String? {
+        switch self {
+        case .notLoggedIn:
+            return "Please log in to do that."
+        }
+    }
+}
+
+@MainActor
 class UserData: ObservableObject {
-    // Basic Auth Properties
     @Published var name: String = ""
     @Published var username: String = ""
     @Published var email: String = ""
-    @Published var phoneNumber: String = ""
-    @Published var website: String = ""
     @Published var isLoggedIn: Bool = false
-    
-    // Password handling (would be hashed in real implementation)
-    private var password: String = ""
-    
+
+    private var session: SupabaseSession?
+
+    var currentUserId: String? { session?.userId }
+
     init() {
-        loadAuthState()
+        if let saved = SupabaseSessionStore.load() {
+            session = saved
+            email = saved.email
+            isLoggedIn = true
+            Task { await loadProfile() }
+        }
     }
-    
-    // Enhanced login with all profile information
-    func login(name: String, username: String, email: String = "", password: String = "") {
+
+    // MARK: - Auth
+
+    func signUp(name: String, username: String, email: String, password: String) async throws {
+        let newSession = try await SupabaseAuthService.signUp(email: email, password: password)
+        session = newSession
+        SupabaseSessionStore.save(newSession)
+        self.email = newSession.email
+        isLoggedIn = true
+
+        try await SupabaseProfileService.upsertProfile(
+            userId: newSession.userId,
+            name: name,
+            username: username,
+            accessToken: newSession.accessToken
+        )
         self.name = name
         self.username = username
-        self.email = email
-        self.password = password
-        self.isLoggedIn = true
-        saveAuthState()
     }
-    
-    // Profile update function
-    func updateProfile(name: String, email: String, username: String) {
-        self.name = name
-        self.email = email
-       
-        saveAuthState()
+
+    func login(email: String, password: String) async throws {
+        let newSession = try await SupabaseAuthService.signIn(email: email, password: password)
+        session = newSession
+        SupabaseSessionStore.save(newSession)
+        self.email = newSession.email
+        isLoggedIn = true
+        await loadProfile()
     }
-    
-    // Password change function
-    func changePassword(newPassword: String) {
-        self.password = newPassword
-        saveAuthState()
-    }
-    
+
     func logout() {
+        if let session {
+            Task { await SupabaseAuthService.signOut(accessToken: session.accessToken) }
+        }
+        session = nil
         name = ""
         username = ""
         email = ""
-        
-        password = ""
         isLoggedIn = false
-        clearAuthState()
+        SupabaseSessionStore.clear()
     }
-    
-    // MARK: - Persistence Methods
-    
-    private func saveAuthState() {
-        UserDefaults.standard.set(name, forKey: "userName")
-        UserDefaults.standard.set(username, forKey: "userUsername")
-        UserDefaults.standard.set(email, forKey: "userEmail")
-        UserDefaults.standard.set(isLoggedIn, forKey: "isLoggedIn")
-        // Note: In a real app, you would never store password in UserDefaults
-        // This is just for demonstration
-        UserDefaults.standard.set(password, forKey: "userPassword")
+
+    func updateProfile(name: String, username: String) async throws {
+        let token = try await validAccessToken()
+        guard let userId = session?.userId else { throw UserDataError.notLoggedIn }
+        try await SupabaseProfileService.upsertProfile(userId: userId, name: name, username: username, accessToken: token)
+        self.name = name
+        self.username = username
     }
-    
-    private func loadAuthState() {
-        name = UserDefaults.standard.string(forKey: "userName") ?? ""
-        username = UserDefaults.standard.string(forKey: "userUsername") ?? ""
-        email = UserDefaults.standard.string(forKey: "userEmail") ?? ""
-        isLoggedIn = UserDefaults.standard.bool(forKey: "isLoggedIn")
-        password = UserDefaults.standard.string(forKey: "userPassword") ?? ""
+
+    /// Verifies the current password by attempting to sign in with it, then
+    /// updates to the new one.
+    func changePassword(currentPassword: String, newPassword: String) async throws {
+        _ = try await SupabaseAuthService.signIn(email: email, password: currentPassword)
+        let token = try await validAccessToken()
+        try await SupabaseAuthService.updatePassword(newPassword: newPassword, accessToken: token)
     }
-    
-    private func clearAuthState() {
-        UserDefaults.standard.removeObject(forKey: "userName")
-        UserDefaults.standard.removeObject(forKey: "userUsername")
-        UserDefaults.standard.removeObject(forKey: "userEmail")
-        
-        UserDefaults.standard.removeObject(forKey: "isLoggedIn")
-        UserDefaults.standard.removeObject(forKey: "userPassword")
+
+    private func loadProfile() async {
+        guard let token = try? await validAccessToken(), let userId = session?.userId else { return }
+        if let profile = try? await SupabaseProfileService.fetchProfile(userId: userId, accessToken: token) {
+            name = profile.name ?? ""
+            username = profile.username ?? ""
+        }
     }
-    
-    
-    func validateCurrentPassword(_ password: String) -> Bool {
-        return self.password == password
+
+    // MARK: - Session
+
+    /// A valid (non-expired) access token, refreshing it first if needed.
+    /// Throws (and logs out) if there's no session or the refresh fails.
+    func validAccessToken() async throws -> String {
+        guard let current = session else { throw UserDataError.notLoggedIn }
+
+        if current.expiresAt > Date().addingTimeInterval(30) {
+            return current.accessToken
+        }
+
+        do {
+            let refreshed = try await SupabaseAuthService.refresh(refreshToken: current.refreshToken)
+            session = refreshed
+            SupabaseSessionStore.save(refreshed)
+            return refreshed.accessToken
+        } catch {
+            logout()
+            throw UserDataError.notLoggedIn
+        }
     }
 }
