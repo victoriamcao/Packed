@@ -67,6 +67,7 @@ struct LoginFormView: View {
 
             BottomNavBar(current: .profile)
         }
+        .background(Color("appBackground").ignoresSafeArea())
     }
 
     private func loginUser() {

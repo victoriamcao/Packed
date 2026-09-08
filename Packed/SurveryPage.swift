@@ -7,11 +7,16 @@
 
 import SwiftUI
 
+private enum SurveyDropdown {
+    case type, gender
+}
+
 struct SurveryPage: View {
     @EnvironmentObject var navigator: AppNavigator
 
     @State private var selectedType = "Tropical Vacation"
     @State private var selectedGender = "I prefer not to say"
+    @State private var expandedDropdown: SurveyDropdown?
     @State private var destination: String = ""
     // Tap-to-select date range (e.g. Sep 3-7) replaces a separate
     // start-date + day-count picker. Starts nil so the very first tap on
@@ -81,53 +86,27 @@ struct SurveryPage: View {
                 Text("Create New List")
                     .font(.title)
                     .fontWeight(.semibold)
-                    .foregroundColor(Color(red: 0.195, green: 0.648, blue: 0.859))
+                    .foregroundColor(Color.lightBlue)
                     .padding(.bottom, 8.0)
 
                 // Type of Vacation button
                 Text("TYPE OF VACATION")
                     .font(.caption)
-                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
-                Menu {
-                    Button(action: { selectedType = "Tropical Vacation" }) {
-                        Text("Tropical Vacation")
-                    }
-                    Button(action: { selectedType = "Mountain Vacation" }) {
-                        Text("Mountain Vacation")
-                    }
-                    Button(action: { selectedType = "Ski Trip" }) {
-                        Text("Ski Trip")
-                    }
-                    Button(action: { selectedType = "City Vacation" }) {
-                        Text("City Vacation")
-                    }
-                    Button(action: { selectedType = "Business Trip" }) {
-                        Text("Business Trip")
-                    }
-                } label: {
-                    ZStack {
-                        Rectangle()
-                            .foregroundColor(Color("buttonGray"))
-                            .frame(width: 350, height: 44)
-                            .cornerRadius(10)
-
-                        Label(
-                            title: {Text(selectedType)
-                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
-                                .padding(.all)},
-                            icon: {Image("arrow")
-                                .resizable()
-                                .frame(width: 30, height: 24)
-                            }
-                        )
-                    }
-                }
+                    .foregroundColor(Color.textGray)
+                DropdownField(
+                    options: ["Tropical Vacation", "Mountain Vacation", "Ski Trip", "City Vacation", "Business Trip"],
+                    selection: $selectedType,
+                    isExpanded: Binding(
+                        get: { expandedDropdown == .type },
+                        set: { expandedDropdown = $0 ? .type : nil }
+                    )
+                )
                 .padding(.bottom, 6)
 
                 // Destination field (used to look up real weather for the trip)
                 Text("DESTINATION")
                     .font(.caption)
-                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
+                    .foregroundColor(Color.textGray)
                 ZStack {
                     Rectangle()
                         .foregroundColor(Color("buttonGray"))
@@ -147,46 +126,26 @@ struct SurveryPage: View {
                 // pick a weather condition here.
                 Text("TRIP DATES")
                     .font(.caption)
-                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
+                    .foregroundColor(Color.textGray)
                 RangeCalendarView(startDate: $tripStartDate, endDate: $tripEndDate)
                     .frame(width: 350)
                 Text(tripDatesSummary)
                     .font(.caption)
-                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
+                    .foregroundColor(Color.textGray)
                     .padding(.bottom, 4)
 
                 // Gender button
                 Text("GENDER")
                     .font(.caption)
-                    .foregroundColor(Color(red: 0.561, green: 0.557, blue: 0.557))
-                Menu {
-                    Button(action: { selectedGender = "I prefer not to say" }) {
-                        Text("I prefer not to say")
-                    }
-                    Button(action: { selectedGender = "Male" }) {
-                        Text("Male")
-                    }
-                    Button(action: { selectedGender = "Female" }) {
-                        Text("Female")
-                    }
-                } label: {
-                    ZStack {
-                        Rectangle()
-                            .foregroundColor(Color("buttonGray"))
-                            .frame(width: 350, height: 44)
-                            .cornerRadius(10)
-
-                        Label(
-                            title: {Text(selectedGender)
-                                .foregroundColor(Color(red: 0.561, green: 0.561, blue: 0.561))
-                                .padding(.all)},
-                            icon: {Image("arrow")
-                                .resizable()
-                                .frame(width: 30, height: 24)
-                            }
-                        )
-                    }
-                }
+                    .foregroundColor(Color.textGray)
+                DropdownField(
+                    options: ["I prefer not to say", "Male", "Female"],
+                    selection: $selectedGender,
+                    isExpanded: Binding(
+                        get: { expandedDropdown == .gender },
+                        set: { expandedDropdown = $0 ? .gender : nil }
+                    )
+                )
 
                 Button {
                     navigator.push(.listPage(ListPageParams(
@@ -215,6 +174,7 @@ struct SurveryPage: View {
 
             BottomNavBar(current: .home)
         }
+        .background(Color("appBackground").ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
     }
 }

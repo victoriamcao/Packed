@@ -91,7 +91,7 @@ struct PackingItemsListView: View {
                                 }
                                 .padding(.horizontal)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color(.systemBackground))
+                                .background(Color("buttonGray"))
                                 .offset(x: item.id == swipedItemId ? -80 : 0) // Slide to reveal button
                                 .animation(.easeOut(duration: 0.3), value: swipedItemId)
                                 .contentShape(Rectangle()) // Make the entire row tappable

@@ -88,7 +88,7 @@ struct MapPage: View {
         .sheet(isPresented: $showingConfirmImage) {
             if let photo = pickedPhoto {
                 ZStack {
-                    Color.white.ignoresSafeArea()
+                    Color("appBackground").ignoresSafeArea()
 
                     VStack {
                         Text("Confirm your photo")

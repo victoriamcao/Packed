@@ -20,13 +20,36 @@ class SavedLists: ObservableObject {
         var duration: Int
         var member: String
         var createdAt: Date
+        /// Raw "yyyy-MM-dd" from Postgres's `date` column - kept as a plain
+        /// string since it has no time component, unlike createdAt, so it
+        /// can't share that field's timestamp decoding strategy.
+        var travelDateString: String? = nil
 
         enum CodingKeys: String, CodingKey {
             case id, title, items
             case tripType = "trip_type"
             case duration, member
             case createdAt = "created_at"
+            case travelDateString = "travel_date"
         }
+
+        /// The trip's travel date, parsed from travelDateString using the
+        /// device's local calendar (a travel date is a plain calendar day
+        /// with no meaningful time zone of its own).
+        var travelDate: Date? {
+            guard let travelDateString else { return nil }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            return formatter.date(from: travelDateString)
+        }
+    }
+
+    private static func dateOnlyString(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: date)
     }
 
     func loadFromStorage(userId: String, accessToken: String) async {
@@ -58,6 +81,7 @@ class SavedLists: ObservableObject {
         type: String,
         duration: Int,
         member: String,
+        travelDate: Date,
         userId: String,
         accessToken: String
     ) async -> Bool {
@@ -78,7 +102,8 @@ class SavedLists: ObservableObject {
             "items": items.map { ["name": $0.name, "category": $0.category] },
             "trip_type": type,
             "duration": duration,
-            "member": member
+            "member": member,
+            "travel_date": Self.dateOnlyString(travelDate)
         ])
 
         do {

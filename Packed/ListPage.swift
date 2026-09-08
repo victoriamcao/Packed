@@ -88,7 +88,7 @@ struct ListPage: View {
                     .padding(.trailing)
                 }
                 .padding(.vertical, 12)
-                .background(Color.white)
+                .background(Color("buttonGray"))
                 .overlay(
                     Rectangle()
                         .frame(height: 1)
@@ -117,6 +117,7 @@ struct ListPage: View {
                                 type: selectedType,
                                 duration: selectedLength,
                                 member: selectedGender,
+                                travelDate: travelDate,
                                 userId: uid,
                                 accessToken: token
                             )
@@ -147,6 +148,7 @@ struct ListPage: View {
 
             BottomNavBar(current: .home)
         }
+            .background(Color("appBackground").ignoresSafeArea())
             .alert("Log in required", isPresented: $showLoginPrompt) {
                 Button("OK", role: .cancel) {}
             } message: {

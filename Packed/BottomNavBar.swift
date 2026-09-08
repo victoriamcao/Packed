@@ -57,7 +57,7 @@ struct BottomNavBar: View {
                 .padding(.vertical, 12)
             }
         }
-        .background(Color(.systemBackground))
+        .background(Color("appBackground"))
         .overlay(
             Rectangle()
                 .frame(height: 0.5)

@@ -11,7 +11,7 @@ struct PastLists: View {
                 Text("Saved Lists")
                     .font(.title)
                     .fontWeight(.semibold)
-                    .foregroundColor(Color(red: 0.195, green: 0.648, blue: 0.859))
+                    .foregroundColor(Color.lightBlue)
                     .padding(.top, 20)
                     .padding(.bottom, 10)
 
@@ -71,6 +71,7 @@ struct PastLists: View {
 
             BottomNavBar(current: .home)
         }
+        .background(Color("appBackground").ignoresSafeArea())
         .onAppear {
             Task {
                 guard let token = try? await userData.validAccessToken(), let uid = userData.currentUserId else { return }
@@ -108,6 +109,7 @@ struct ListDetailView: View {
 
             BottomNavBar(current: .home)
         }
+        .background(Color("appBackground").ignoresSafeArea())
         .onAppear {
             if items.isEmpty {
                 items = list.items.map { PackingItem(name: $0.name, category: $0.category) }

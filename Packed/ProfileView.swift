@@ -9,6 +9,7 @@ import SwiftUI
 struct ProfileView: View {
     @ObservedObject var userData: UserData
     @EnvironmentObject var navigator: AppNavigator
+    @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     @State private var showingEditView = false
     
@@ -58,9 +59,14 @@ struct ProfileView: View {
                                 )
                             }
                         }
+
+                        Section(header: Text("Appearance").font(.headline)) {
+                            AppearancePicker(selection: $themeManager.preference)
+                                .padding(.top, 4)
+                        }
                     }
                     .padding()
-                    .background(Color(.systemBackground))
+                    .background(Color("buttonGray"))
                     .cornerRadius(12)
                     .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                     .padding(.horizontal)
@@ -99,6 +105,7 @@ struct ProfileView: View {
 
             BottomNavBar(current: .profile)
         }
+        .background(Color("appBackground").ignoresSafeArea())
     }
 }
 
@@ -217,6 +224,7 @@ struct ChangePasswordView: View {
 
             BottomNavBar(current: .profile)
         }
+        .background(Color("appBackground").ignoresSafeArea())
     }
 
     private func validatePasswordChange() -> Bool {
@@ -284,6 +292,7 @@ struct APIKeySettingsView: View {
 
             BottomNavBar(current: .profile)
         }
+        .background(Color("appBackground").ignoresSafeArea())
     }
 }
 
@@ -315,6 +324,43 @@ struct InfoRow: View {
         .foregroundColor(.primary)
     }
 }
+// Appearance Picker - a 3-way Light/Dark/System control styled like the
+// rest of the app's custom controls (buttonGray pill, lightBlue selection)
+// instead of the native segmented control.
+struct AppearancePicker: View {
+    @Binding var selection: AppColorScheme
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(AppColorScheme.allCases) { option in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selection = option
+                    }
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: option.icon)
+                            .font(.system(size: 15, weight: .semibold))
+                        Text(option.label)
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(selection == option ? Color.lightBlue : Color.clear)
+                    .foregroundColor(selection == option ? .white : Color.textGray)
+                    .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .background(Color.buttonGray)
+        .cornerRadius(12)
+    }
+}
+
 #Preview {
     ProfileView(userData: UserData())
+        .environmentObject(AppNavigator())
+        .environmentObject(ThemeManager())
 }

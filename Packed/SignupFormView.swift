@@ -140,8 +140,9 @@ struct SignupFormView: View {
 
             BottomNavBar(current: .profile)
         }
+        .background(Color("appBackground").ignoresSafeArea())
     }
-    
+
     private func validateForm() {
         let nameValid = !name.isEmpty
         let usernameValid = !username.isEmpty && username.count >= 4
