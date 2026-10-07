@@ -138,6 +138,7 @@ struct ListDetailView: View {
     @EnvironmentObject var userData: UserData
     @State private var items: [PackingItem] = []
     @State private var hasPopulated = false
+    @State private var skipNextChange = false
     @State private var pendingSave: Task<Void, Never>?
     @State private var saveErrorMessage: String?
     @State private var showingShareSheet = false
@@ -204,12 +205,19 @@ struct ListDetailView: View {
         .onAppear {
             if !hasPopulated {
                 let latest = savedLists.lists.first(where: { $0.id == list.id }) ?? list
-                items = latest.items.map(\.packingItem)
+                let loaded = latest.items.map(\.packingItem)
+                // Filling the list in isn't an edit, so don't save it back.
+                skipNextChange = !loaded.isEmpty
+                items = loaded
                 hasPopulated = true
             }
         }
         .onChange(of: items) { _, newValue in
             guard hasPopulated else { return }
+            if skipNextChange {
+                skipNextChange = false
+                return
+            }
             scheduleSave(newValue)
         }
         .onDisappear {
