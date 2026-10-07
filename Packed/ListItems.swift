@@ -2,10 +2,8 @@
 //  ListItems.swift
 //  Packed
 //
-//  NOTE: If you see an error like "Cannot find type 'PackingItem' in scope",
-//  it means the `PackingItem.swift` file is missing from your project
-//  or not part of the build target. Please ensure you have that file
-//  in your project.
+//  The PackingItem model plus the rule-based packing list generator used
+//  whenever the AI generator isn't available.
 //
 //  Created by Scholar on 7/30/25.
 //
@@ -15,10 +13,32 @@ import SwiftUI
 
 // Struct to represent a single item in the packing list
 struct PackingItem: Identifiable, Hashable, Codable {
-    let id = UUID()
+    var id: UUID
     var name: String
-    var isPacked: Bool = false
+    var isPacked: Bool
     var category: String
+
+    init(id: UUID = UUID(), name: String, isPacked: Bool = false, category: String) {
+        self.id = id
+        self.name = name
+        self.isPacked = isPacked
+        self.category = category
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, isPacked, category
+    }
+
+    // Decodes the stored id when there is one, so an item keeps the same
+    // identity across a save/load round trip. Older data without an id
+    // (or without isPacked) still decodes, with a fresh id / unpacked.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try container.decode(String.self, forKey: .name)
+        isPacked = try container.decodeIfPresent(Bool.self, forKey: .isPacked) ?? false
+        category = try container.decode(String.self, forKey: .category)
+    }
 }
 
 class ListItems {

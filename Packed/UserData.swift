@@ -64,12 +64,43 @@ class UserData: ObservableObject {
         if let session {
             Task { await SupabaseAuthService.signOut(accessToken: session.accessToken) }
         }
+        clearLocalSession()
+    }
+
+    private func clearLocalSession() {
         session = nil
         name = ""
         username = ""
         email = ""
         isLoggedIn = false
         SupabaseSessionStore.clear()
+        PhotoCache.removeAll()
+    }
+
+    /// Permanently deletes the account and everything in it on the server,
+    /// then signs out on this device.
+    func deleteAccount() async throws {
+        let token = try await validAccessToken()
+        try await SupabaseAuthService.deleteAccount(accessToken: token)
+        Log.auth.notice("Account deleted")
+        clearLocalSession()
+    }
+
+    // MARK: - Password reset
+
+    func sendPasswordResetCode(email: String) async throws {
+        try await SupabaseAuthService.sendPasswordResetCode(email: email)
+    }
+
+    /// Verifies the emailed code (which logs the user in), then sets the new password.
+    func resetPassword(email: String, code: String, newPassword: String) async throws {
+        let newSession = try await SupabaseAuthService.verifyRecoveryCode(email: email, code: code)
+        session = newSession
+        SupabaseSessionStore.save(newSession)
+        self.email = newSession.email
+        isLoggedIn = true
+        try await SupabaseAuthService.updatePassword(newPassword: newPassword, accessToken: newSession.accessToken)
+        await loadProfile()
     }
 
     func updateProfile(name: String, username: String) async throws {
@@ -113,6 +144,7 @@ class UserData: ObservableObject {
             SupabaseSessionStore.save(refreshed)
             return refreshed.accessToken
         } catch {
+            Log.auth.error("Session refresh failed, logging out: \(error.localizedDescription, privacy: .public)")
             logout()
             throw UserDataError.notLoggedIn
         }

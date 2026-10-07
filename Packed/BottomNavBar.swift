@@ -26,36 +26,42 @@ struct BottomNavBar: View {
             } label: {
                 VStack(spacing: 4) {
                     Image(systemName: "house.fill")
-                        .font(.system(size: 25))
+                        .font(.title2)
                         .foregroundColor(current == .home ? .darkBlue : .textGray)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
             }
+            .accessibilityLabel("Home")
+            .accessibilityAddTraits(current == .home ? .isSelected : [])
 
             Button {
                 navigator.go(to: .map)
             } label: {
                 VStack {
                     Image(systemName: "globe")
-                        .font(.system(size: 25))
+                        .font(.title2)
                         .foregroundColor(current == .map ? .darkBlue : .textGray)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
             }
+            .accessibilityLabel("Map")
+            .accessibilityAddTraits(current == .map ? .isSelected : [])
 
             Button {
                 navigator.go(to: userData.isLoggedIn ? .profile : .loginChoice)
             } label: {
                 VStack {
                     Image(systemName: userData.isLoggedIn ? "person.circle.fill" : "person.crop.circle")
-                        .font(.system(size: 25))
+                        .font(.title2)
                         .foregroundColor(current == .profile ? .darkBlue : .textGray)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
             }
+            .accessibilityLabel(userData.isLoggedIn ? "Profile" : "Log in or sign up")
+            .accessibilityAddTraits(current == .profile ? .isSelected : [])
         }
         .background(Color("appBackground"))
         .overlay(

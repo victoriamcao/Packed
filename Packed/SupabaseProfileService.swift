@@ -53,6 +53,9 @@ enum SupabaseProfileService {
 
         let (_, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            if (response as? HTTPURLResponse)?.statusCode == 409 {
+                throw SupabaseAuthError.requestFailed("That username is already taken. Try another one.")
+            }
             throw SupabaseAuthError.requestFailed("Couldn't save your profile.")
         }
     }

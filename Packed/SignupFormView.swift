@@ -13,6 +13,7 @@ struct SignupFormView: View {
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
+    @State private var confirmPassword = ""
     @State private var username = ""
     @State private var errorMessage = ""
     @State private var canSignUp = false
@@ -27,16 +28,18 @@ struct SignupFormView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
+            ScrollView {
             VStack(spacing: 20) {
                 Text("Create Account")
                     .font(.largeTitle)
                     .bold()
+                    .accessibilityAddTraits(.isHeader)
                 
                 // Name Field
                 TextField("Full Name", text: $name)
                     .textFieldStyle(.roundedBorder)
                     .padding(.horizontal)
-                    .onChange(of: name) { _ in
+                    .onChange(of: name) { _, _ in
                         validateForm()
                     }
                 
@@ -45,8 +48,9 @@ struct SignupFormView: View {
                     TextField("Email", text: $email)
                         .textFieldStyle(.roundedBorder)
                         .padding(.horizontal)
-                        .autocapitalization(.none)
-                        .onChange(of: email) { newValue in
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .onChange(of: email) { _, newValue in
                             emailValid = isValidEmail(newValue)
                             validateForm()
                             showEmailError = !newValue.isEmpty && !emailValid
@@ -64,8 +68,9 @@ struct SignupFormView: View {
                 TextField("Username", text: $username)
                     .textFieldStyle(.roundedBorder)
                     .padding(.horizontal)
-                    .autocapitalization(.none)
-                    .onChange(of: username) { _ in
+                    .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    .onChange(of: username) { _, _ in
                         validateForm()
                     }
                 
@@ -73,7 +78,18 @@ struct SignupFormView: View {
                 SecureField("Password", text: $password)
                     .textFieldStyle(.roundedBorder)
                     .padding(.horizontal)
-                    .onChange(of: password) { _ in
+                    .textContentType(.newPassword)
+                    .onChange(of: password) { _, _ in
+                        validateForm()
+                    }
+
+                // Confirm Password Field - a typo at signup would otherwise
+                // lock the user out of the account they just made.
+                SecureField("Confirm Password", text: $confirmPassword)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal)
+                    .textContentType(.newPassword)
+                    .onChange(of: confirmPassword) { _, _ in
                         validateForm()
                     }
                 
@@ -87,6 +103,9 @@ struct SignupFormView: View {
                     RequirementView(met: PasswordPolicy.hasMinimumLength(password), text: "8+ characters")
                     RequirementView(met: PasswordPolicy.hasNumber(password), text: "Contains number")
                     RequirementView(met: PasswordPolicy.hasSpecialCharacter(password), text: "Special character (!@#$%^&*)")
+                    if !confirmPassword.isEmpty {
+                        RequirementView(met: password == confirmPassword, text: "Passwords match")
+                    }
                     
                     // Email Validation Indicator
                     if !email.isEmpty {
@@ -124,10 +143,11 @@ struct SignupFormView: View {
                 } label: {
                     HStack {
                         Text("I already have an account")
-                            .foregroundColor(Color.blue)
+                            .foregroundColor(Color.lightBlue)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 16))
-                            .foregroundColor(.blue)
+                            .font(.callout)
+                            .foregroundColor(Color.lightBlue)
+                            .accessibilityHidden(true)
                     }
                 }
                 .padding(.top, 10)
@@ -136,7 +156,8 @@ struct SignupFormView: View {
             }
             .padding()
             .padding(.bottom, 60)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
+            }
 
             BottomNavBar(current: .profile)
         }
@@ -147,7 +168,8 @@ struct SignupFormView: View {
         let nameValid = !name.isEmpty
         let usernameValid = !username.isEmpty && username.count >= 4
         let passwordValid = PasswordPolicy.isValid(password)
-        canSignUp = nameValid && emailValid && usernameValid && passwordValid
+        let passwordsMatch = password == confirmPassword
+        canSignUp = nameValid && emailValid && usernameValid && passwordValid && passwordsMatch
     }
     
     private func signUpUser() {
@@ -184,10 +206,15 @@ struct SignupFormView: View {
             return
         }
 
+        guard password == confirmPassword else {
+            errorMessage = "Passwords don't match"
+            return
+        }
+
         isSigningUp = true
         Task {
             do {
-                try await userData.signUp(name: name, username: username, email: email, password: password)
+                try await userData.signUp(name: name, username: username, email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
                 navigator.go(to: .profile)
             } catch {
                 errorMessage = error.localizedDescription
@@ -201,24 +228,6 @@ struct SignupFormView: View {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailPredicate = NSPredicate(format:"SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
-    }
-}
-
-// Reusable Requirement View - shows a checkmark/x that flips red -> green
-// live as the requirement becomes met. Shared with ChangePasswordView.
-struct RequirementView: View {
-    let met: Bool
-    let text: String
-    
-    var body: some View {
-        HStack {
-            Image(systemName: met ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .foregroundColor(met ? .green : .red)
-            Text(text)
-                .font(.caption)
-                .foregroundColor(met ? .green : .red)
-        }
-        .animation(.easeInOut(duration: 0.2), value: met)
     }
 }
 

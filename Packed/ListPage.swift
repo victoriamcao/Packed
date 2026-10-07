@@ -28,6 +28,7 @@ struct ListPage: View {
     // Whether the current list came from the Claude-powered generator.
     @State private var isGeneratingList: Bool = false
     @State private var usedAIGeneration: Bool = false
+    @State private var aiNotice: String?
     
     @Environment(\.dismiss) var dismiss
 
@@ -38,6 +39,13 @@ struct ListPage: View {
                     .padding([.top, .leading, .bottom])
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .accessibilityLabel("Trip name")
+                    .onChange(of: vacationName) { _, newValue in
+                        if newValue.count > 60 {
+                            vacationName = String(newValue.prefix(60))
+                        }
+                    }
 
                 if isLoadingWeather {
                     Text("Checking weather for \(destination)...")
@@ -61,41 +69,29 @@ struct ListPage: View {
                         .font(.caption)
                         .foregroundColor(.gray)
                         .padding(.bottom, 8)
+                } else if let aiNotice {
+                    Text(aiNotice)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                } else if !items.isEmpty && !userData.isLoggedIn {
+                    Text("Basic list. Log in to get an AI-personalized one next time.")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
                 }
                 Divider()
                 
                 PackingItemsListView(items: $items)
                 
-                // Add new item manually
-                HStack {
-                    TextField("Item Name", text: $newItem)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.leading)
-                    Button(action: {
-                        let trimmed = newItem.trimmingCharacters(in: .whitespaces)
-                        if !trimmed.isEmpty {
-                            items.append(PackingItem(name: trimmed, category: "Added by You"))
-                            newItem = ""
-                        }
-                    }) {
-                        Text("Add")
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                            .background(Color("lightBlue"))
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
-                    .padding(.trailing)
+                AddItemBar(text: $newItem) { name in
+                    items.append(PackingItem(name: name, category: "Added by You"))
                 }
-                .padding(.vertical, 12)
-                .background(Color("buttonGray"))
-                .overlay(
-                    Rectangle()
-                        .frame(height: 1)
-                        .foregroundColor(Color.gray.opacity(0.4)),
-                    alignment: .top
-                )
-                
+
                 // Save and Go Home buttons
                 VStack(spacing: 0) {
                     Button(action: {
@@ -103,7 +99,7 @@ struct ListPage: View {
                             showLoginPrompt = true
                             return
                         }
-                        let listItems = items.map { SavedPackingItem(name: $0.name, category: $0.category) }
+                        let listItems = items.map { SavedPackingItem($0) }
                         isSaving = true
                         Task {
                             guard let token = try? await userData.validAccessToken(), let uid = userData.currentUserId else {
@@ -187,6 +183,12 @@ struct ListPage: View {
                 let userAddedWhileGenerating = items
 
                 isGeneratingList = true
+                // Logged-in users get AI lists through Packed's backend;
+                // a personal API key (Profile settings) still works too.
+                var accessToken: String?
+                if userData.isLoggedIn {
+                    accessToken = try? await userData.validAccessToken()
+                }
                 do {
                     let generated = try await ClaudePackingListService.generatePackingList(
                         destination: trimmedDestination,
@@ -194,13 +196,18 @@ struct ListPage: View {
                         gender: selectedGender,
                         travelDate: travelDate,
                         lengthDays: selectedLength,
-                        weather: historicalWeather
+                        weather: historicalWeather,
+                        accessToken: accessToken
                     )
                     items = generated + userAddedWhileGenerating
                     usedAIGeneration = true
                 } catch {
-                    // No API key configured, offline, or an API error -
+                    // Not logged in / no key, offline, or an API error -
                     // fall back to the rule-based generator.
+                    Log.ai.notice("AI list unavailable, using rule-based list: \(error.localizedDescription, privacy: .public)")
+                    if case .limitReached(let message)? = error as? ClaudePackingListError {
+                        aiNotice = "\(message) Here's a basic list instead."
+                    }
                     let generated = ListItems.generatePackingList(
                         type: selectedType,
                         gender: selectedGender,
