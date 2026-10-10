@@ -1,5 +1,5 @@
 //
-//  SurveryPage.swift
+//  SurveyPage.swift
 //  Packed
 //
 //  Created by Scholar on 7/29/25.
@@ -11,8 +11,9 @@ private enum SurveyDropdown {
     case type, gender
 }
 
-struct SurveryPage: View {
+struct SurveyPage: View {
     @EnvironmentObject var navigator: AppNavigator
+    @EnvironmentObject var userData: UserData
 
     @State private var selectedType = "Tropical Vacation"
     @State private var selectedGender = "I prefer not to say"
@@ -67,6 +68,7 @@ struct SurveryPage: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            ScrollView {
             VStack(spacing: 6) {
                 HStack {
                     Button {
@@ -88,6 +90,7 @@ struct SurveryPage: View {
                     .fontWeight(.semibold)
                     .foregroundColor(Color.lightBlue)
                     .padding(.bottom, 8.0)
+                    .accessibilityAddTraits(.isHeader)
 
                 // Type of Vacation button
                 Text("TYPE OF VACATION")
@@ -99,7 +102,8 @@ struct SurveryPage: View {
                     isExpanded: Binding(
                         get: { expandedDropdown == .type },
                         set: { expandedDropdown = $0 ? .type : nil }
-                    )
+                    ),
+                    accessibilityTitle: "Type of vacation"
                 )
                 .padding(.bottom, 6)
 
@@ -107,17 +111,14 @@ struct SurveryPage: View {
                 Text("DESTINATION")
                     .font(.caption)
                     .foregroundColor(Color.textGray)
-                ZStack {
-                    Rectangle()
-                        .foregroundColor(Color("buttonGray"))
-                        .frame(width: 350, height: 44)
-                        .cornerRadius(10)
-                    TextField("City, Country", text: $destination)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .autocorrectionDisabled()
-                        .frame(width: 350)
-                }
+                TextField("City, Country", text: $destination)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                    .autocorrectionDisabled()
+                    .frame(maxWidth: 350, minHeight: 44)
+                    .background(Color("buttonGray"))
+                    .cornerRadius(10)
+                    .accessibilityLabel("Destination")
                 .padding(.bottom, 6)
 
                 // Trip dates - tap a start day, then an end day; everything
@@ -128,7 +129,7 @@ struct SurveryPage: View {
                     .font(.caption)
                     .foregroundColor(Color.textGray)
                 RangeCalendarView(startDate: $tripStartDate, endDate: $tripEndDate)
-                    .frame(width: 350)
+                    .frame(maxWidth: 350)
                 Text(tripDatesSummary)
                     .font(.caption)
                     .foregroundColor(Color.textGray)
@@ -144,7 +145,8 @@ struct SurveryPage: View {
                     isExpanded: Binding(
                         get: { expandedDropdown == .gender },
                         set: { expandedDropdown = $0 ? .gender : nil }
-                    )
+                    ),
+                    accessibilityTitle: "Gender"
                 )
 
                 Button {
@@ -157,19 +159,26 @@ struct SurveryPage: View {
                         travelDate: resolvedStartDate
                     )))
                 } label: {
-                    ZStack {
-                        Rectangle()
-                            .foregroundColor(Color("lightBlue"))
-                            .frame(width: 350, height: 46)
-                            .cornerRadius(10)
-                        Text("Create")
-                            .font(.title3)
-                            .foregroundColor(Color.white)
-                    }
+                    Text("Create")
+                        .font(.title3)
+                        .foregroundColor(Color.white)
+                        .frame(maxWidth: 350, minHeight: 46)
+                        .background(Color("lightBlue"))
+                        .cornerRadius(10)
                 }
                 .padding(.top, 10)
+
+                Text(userData.isLoggedIn
+                     ? "✨ Your list will be AI-personalized for your destination and weather."
+                     : "Log in to get an AI-personalized list for your destination and weather.")
+                    .font(.caption)
+                    .foregroundColor(Color.textGray)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 4)
             }
+            .padding(.horizontal)
             .padding(.bottom, 70)
+            }
             .frame(maxHeight: .infinity, alignment: .top)
 
             BottomNavBar(current: .home)
@@ -180,7 +189,7 @@ struct SurveryPage: View {
 }
 
 #Preview {
-    SurveryPage(savedLists: SavedLists())
+    SurveyPage(savedLists: SavedLists())
         .environmentObject(AppNavigator())
         .environmentObject(UserData())
 }

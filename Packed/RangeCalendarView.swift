@@ -38,16 +38,21 @@ struct RangeCalendarView: View {
                 changeMonth(by: -1)
             } label: {
                 Image(systemName: "chevron.left")
+                    .frame(minWidth: 44, minHeight: 44)
             }
+            .accessibilityLabel("Previous month")
             Spacer()
             Text(monthTitle)
                 .font(.subheadline.bold())
+                .accessibilityAddTraits(.isHeader)
             Spacer()
             Button {
                 changeMonth(by: 1)
             } label: {
                 Image(systemName: "chevron.right")
+                    .frame(minWidth: 44, minHeight: 44)
             }
+            .accessibilityLabel("Next month")
         }
         .foregroundColor(Color("lightBlue"))
         .padding(.horizontal, 4)
@@ -77,6 +82,7 @@ struct RangeCalendarView: View {
                     .frame(maxWidth: .infinity)
             }
         }
+        .accessibilityHidden(true)
     }
 
     private var dayGrid: some View {
@@ -102,7 +108,8 @@ struct RangeCalendarView: View {
             handleTap(date)
         } label: {
             Text("\(calendar.component(.day, from: date))")
-                .font(.system(size: 14))
+                .font(.subheadline)
+                .minimumScaleFactor(0.6)
                 .foregroundColor(isStart || isEnd ? .white : .primary)
                 .frame(width: 30, height: 30)
                 .background(
@@ -115,6 +122,15 @@ struct RangeCalendarView: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityDateLabel(date))
+        .accessibilityValue(isStart ? "Trip start" : isEnd ? "Trip end" : inRange ? "In trip" : "")
+        .accessibilityAddTraits(isStart || isEnd || inRange ? .isSelected : [])
+    }
+
+    private func accessibilityDateLabel(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .full
+        return formatter.string(from: date)
     }
 
     private func isDateInRange(_ date: Date) -> Bool {

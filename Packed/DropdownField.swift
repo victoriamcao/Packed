@@ -16,6 +16,8 @@ struct DropdownField: View {
     let options: [String]
     @Binding var selection: String
     @Binding var isExpanded: Bool
+    /// What VoiceOver calls this control, e.g. "Type of vacation".
+    var accessibilityTitle: String = ""
 
     var body: some View {
         Button {
@@ -28,12 +30,12 @@ struct DropdownField: View {
                     .foregroundColor(.primary)
                 Spacer()
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundColor(Color("lightBlue"))
                     .rotationEffect(.degrees(isExpanded ? 180 : 0))
             }
             .padding(.horizontal, 16)
-            .frame(width: 350, height: 44)
+            .frame(maxWidth: 350, minHeight: 44)
             .background(Color("buttonGray"))
             .cornerRadius(10)
             .overlay(
@@ -42,6 +44,9 @@ struct DropdownField: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityTitle)
+        .accessibilityValue(selection)
+        .accessibilityHint(isExpanded ? "Double tap to close" : "Double tap to choose")
         .overlay(alignment: .top) {
             if isExpanded {
                 optionsList
@@ -67,7 +72,7 @@ struct DropdownField: View {
                         Spacer()
                         if option == selection {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.caption.weight(.semibold))
                                 .foregroundColor(.white)
                         }
                     }
@@ -76,6 +81,7 @@ struct DropdownField: View {
                     .background(option == selection ? Color("lightBlue") : Color("buttonGray"))
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(option == selection ? .isSelected : [])
 
                 if option != options.last {
                     Divider()
@@ -83,7 +89,7 @@ struct DropdownField: View {
                 }
             }
         }
-        .frame(width: 350)
+        .frame(maxWidth: 350)
         .background(Color("buttonGray"))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(

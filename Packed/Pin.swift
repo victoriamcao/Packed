@@ -15,14 +15,27 @@ class Pin: Identifiable, ObservableObject, Equatable {
     /// in the map_pins table.
     let id: String
     let coordinate: CLLocationCoordinate2D
+    /// Photos that loaded, in order.
     @Published var images: [UIImage] = []
-    /// Supabase Storage object paths, parallel to `images`.
+    /// Storage paths parallel to `images` (same count and order).
+    @Published var imagePaths: [String] = []
+    /// Every Supabase Storage photo path saved on this pin, including any
+    /// that failed to load this time.
     @Published var photoPaths: [String] = []
 
-    init(id: String = UUID().uuidString, coordinate: CLLocationCoordinate2D, images: [UIImage] = [], photoPaths: [String] = []) {
+    // Only mutate a Pin's published properties from the main actor (the
+    // map screen does this after PinStore calls return).
+    init(
+        id: String = UUID().uuidString,
+        coordinate: CLLocationCoordinate2D,
+        images: [UIImage] = [],
+        imagePaths: [String] = [],
+        photoPaths: [String] = []
+    ) {
         self.id = id
         self.coordinate = coordinate
         self.images = images
+        self.imagePaths = imagePaths
         self.photoPaths = photoPaths
     }
 

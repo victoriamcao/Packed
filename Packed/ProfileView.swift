@@ -12,6 +12,9 @@ struct ProfileView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     @State private var showingEditView = false
+    @State private var confirmingDelete = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -23,10 +26,12 @@ struct ProfileView: View {
                             .resizable()
                             .frame(width: 100, height: 100)
                             .foregroundColor(.lightBlue)
+                            .accessibilityHidden(true)
                         
-                        Text("Hi, \(userData.name)!")
+                        Text(userData.name.isEmpty ? "Hi!" : "Hi, \(userData.name)!")
                             .font(.title)
                             .fontWeight(.medium)
+                            .accessibilityAddTraits(.isHeader)
                     }
                     .padding(.top, 20)
                     
@@ -47,6 +52,7 @@ struct ProfileView: View {
                             } label: {
                                 InfoRow(label: "Password", value: "••••••••", isSecure: true)
                             }
+                            .accessibilityLabel("Change password")
                         }
 
                         Section(header: Text("AI Packing Assistant").font(.headline)) {
@@ -54,8 +60,8 @@ struct ProfileView: View {
                                 navigator.push(.apiKeySettings)
                             } label: {
                                 InfoRow(
-                                    label: "Anthropic API Key",
-                                    value: APIKeyStore.load() == nil ? "Not set" : "Configured"
+                                    label: "Personal Anthropic API Key (optional)",
+                                    value: APIKeyStore.load() == nil ? "Not set - using Packed's AI" : "Using your key"
                                 )
                             }
                         }
@@ -84,7 +90,7 @@ struct ProfileView: View {
                         
                         Button(action: {
                             userData.logout()
-                            dismiss()
+                            navigator.goHome()
                         }) {
                             Text("Log Out")
                                 .frame(maxWidth: .infinity)
@@ -93,6 +99,21 @@ struct ProfileView: View {
                                 .foregroundColor(.white)
                                 .cornerRadius(10)
                         }
+
+                        Button(role: .destructive) {
+                            confirmingDelete = true
+                        } label: {
+                            Text(isDeleting ? "Deleting Account..." : "Delete Account")
+                                .font(.subheadline)
+                                .foregroundColor(.red)
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .disabled(isDeleting)
+                        .padding(.top, 8)
+
+                        Link("Privacy Policy", destination: AppLinks.privacyPolicy)
+                            .font(.footnote)
+                            .foregroundColor(Color.textGray)
                     }
                     .padding(.horizontal)
                 }
@@ -102,124 +123,24 @@ struct ProfileView: View {
             .sheet(isPresented: $showingEditView) {
                 EditProfileView(userData: userData)
             }
-
-            BottomNavBar(current: .profile)
-        }
-        .background(Color("appBackground").ignoresSafeArea())
-    }
-}
-
-// Edit Profile Subview
-struct EditProfileView: View {
-    @ObservedObject var userData: UserData
-    @Environment(\.dismiss) var dismiss
-    @State private var name: String
-    @State private var username: String
-    @State private var errorMessage = ""
-    @State private var isSaving = false
-
-    init(userData: UserData) {
-        self.userData = userData
-        _name = State(initialValue: userData.name)
-        _username = State(initialValue: userData.username)
-    }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section(header: Text("Personal Info"), footer: Text("Email is set at signup and can't be changed here.")) {
-                    TextField("Name", text: $name)
-                    TextField("Username", text: $username)
-                    Text(userData.email)
-                        .foregroundColor(.gray)
+            .confirmationDialog(
+                "Delete your account?",
+                isPresented: $confirmingDelete,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Account and All Data", role: .destructive) {
+                    Task { await deleteAccount() }
                 }
-
-                if !errorMessage.isEmpty {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                }
+            } message: {
+                Text("This permanently deletes your account, saved lists, and map photos. It can't be undone.")
             }
-            .navigationTitle("Edit Profile")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(isSaving ? "Saving..." : "Save") {
-                        Task {
-                            isSaving = true
-                            do {
-                                try await userData.updateProfile(name: name, username: username)
-                                dismiss()
-                            } catch {
-                                errorMessage = error.localizedDescription
-                            }
-                            isSaving = false
-                        }
-                    }
-                    .disabled(isSaving)
-                }
-            }
-        }
-    }
-}
-
-// Change Password Subview
-struct ChangePasswordView: View {
-    @ObservedObject var userData: UserData
-    @Environment(\.dismiss) var dismiss
-    @State private var currentPassword = ""
-    @State private var newPassword = ""
-    @State private var confirmPassword = ""
-    @State private var errorMessage = ""
-    @State private var isSaving = false
-
-    private var canSave: Bool {
-        !currentPassword.isEmpty && PasswordPolicy.isValid(newPassword) && newPassword == confirmPassword
-    }
-
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            Form {
-                Section {
-                    SecureField("Current Password", text: $currentPassword)
-                    SecureField("New Password", text: $newPassword)
-                    SecureField("Confirm Password", text: $confirmPassword)
-                }
-
-                Section("Password Requirements") {
-                    RequirementView(met: PasswordPolicy.hasMinimumLength(newPassword), text: "8+ characters")
-                    RequirementView(met: PasswordPolicy.hasNumber(newPassword), text: "Contains number")
-                    RequirementView(met: PasswordPolicy.hasSpecialCharacter(newPassword), text: "Special character (!@#$%^&*)")
-                    if !confirmPassword.isEmpty {
-                        RequirementView(met: newPassword == confirmPassword, text: "Passwords match")
-                    }
-                }
-
-                if !errorMessage.isEmpty {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .navigationTitle("Change Password")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(isSaving ? "Saving..." : "Save") {
-                        guard validatePasswordChange() else { return }
-                        Task {
-                            isSaving = true
-                            do {
-                                try await userData.changePassword(currentPassword: currentPassword, newPassword: newPassword)
-                                dismiss()
-                            } catch {
-                                errorMessage = error.localizedDescription
-                            }
-                            isSaving = false
-                        }
-                    }
-                    .disabled(isSaving || !canSave)
-                }
+            .alert("Couldn't delete account", isPresented: Binding(
+                get: { deleteError != nil },
+                set: { if !$0 { deleteError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(deleteError ?? "")
             }
 
             BottomNavBar(current: .profile)
@@ -227,72 +148,15 @@ struct ChangePasswordView: View {
         .background(Color("appBackground").ignoresSafeArea())
     }
 
-    private func validatePasswordChange() -> Bool {
-        guard !currentPassword.isEmpty else {
-            errorMessage = "Enter current password"
-            return false
+    private func deleteAccount() async {
+        isDeleting = true
+        defer { isDeleting = false }
+        do {
+            try await userData.deleteAccount()
+            navigator.goHome()
+        } catch {
+            deleteError = error.localizedDescription
         }
-        guard PasswordPolicy.isValid(newPassword) else {
-            errorMessage = "Password doesn't meet all requirements"
-            return false
-        }
-        guard newPassword == confirmPassword else {
-            errorMessage = "Passwords don't match"
-            return false
-        }
-        errorMessage = ""
-        return true
-    }
-}
-
-// API Key Settings Subview
-struct APIKeySettingsView: View {
-    @Environment(\.dismiss) var dismiss
-    @State private var apiKey: String = APIKeyStore.load() ?? ""
-    @State private var errorMessage: String?
-
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            Form {
-                Section(header: Text("Anthropic API Key"), footer: Text("Packed uses your own Anthropic API key to generate AI-personalized packing lists. Your key is stored securely on this device and is never sent anywhere besides Anthropic's API. Without a key, Packed falls back to its built-in packing list rules.")) {
-                    SecureField("sk-ant-...", text: $apiKey)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                }
-
-                if let errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                }
-
-                if !apiKey.isEmpty {
-                    Button("Remove Key", role: .destructive) {
-                        if APIKeyStore.clear() {
-                            apiKey = ""
-                            errorMessage = nil
-                        } else {
-                            errorMessage = "Couldn't remove the key from the Keychain. Try again."
-                        }
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .navigationTitle("AI Packing Assistant")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        if APIKeyStore.save(apiKey) {
-                            dismiss()
-                        } else {
-                            errorMessage = "Couldn't save the key to the Keychain. Try again."
-                        }
-                    }
-                }
-            }
-
-            BottomNavBar(current: .profile)
-        }
-        .background(Color("appBackground").ignoresSafeArea())
     }
 }
 
@@ -312,8 +176,11 @@ struct InfoRow: View {
                 HStack {
                     Text("••••••••")
                     Spacer()
-                    Image(systemName: "eye.slash")
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.gray)
                 }
+                .accessibilityHidden(true)
             } else {
                 Text(value.isEmpty ? "Not set" : value)
             }
@@ -340,7 +207,8 @@ struct AppearancePicker: View {
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: option.icon)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.subheadline.weight(.semibold))
+                            .accessibilityHidden(true)
                         Text(option.label)
                             .font(.caption)
                     }
@@ -351,6 +219,8 @@ struct AppearancePicker: View {
                     .cornerRadius(8)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(option.label) appearance")
+                .accessibilityAddTraits(selection == option ? .isSelected : [])
             }
         }
         .padding(4)

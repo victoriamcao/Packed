@@ -57,6 +57,54 @@ enum SupabaseAuthService {
         }
     }
 
+    /// Emails a password reset code. The Supabase "Reset Password" email
+    /// template must include {{ .Token }} so the email contains a code the
+    /// user can type into the app (see supabase/README.md).
+    static func sendPasswordResetCode(email: String) async throws {
+        guard let url = URL(string: "\(authBaseURL)/recover") else {
+            throw SupabaseAuthError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["email": email])
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let message = (json?["msg"] as? String) ?? (json?["message"] as? String) ?? "Couldn't send the reset email. Try again in a minute."
+            throw SupabaseAuthError.requestFailed(message)
+        }
+    }
+
+    /// Trades the emailed reset code for a logged-in session.
+    static func verifyRecoveryCode(email: String, code: String) async throws -> SupabaseSession {
+        try await tokenRequest(path: "verify", body: ["type": "recovery", "email": email, "token": code])
+    }
+
+    /// Permanently deletes the account and all its data, via the
+    /// delete-account Edge Function (deleting an auth user needs the
+    /// service-role key, which must never be in the app).
+    static func deleteAccount(accessToken: String) async throws {
+        guard let url = URL(string: "\(SupabaseConfig.projectURL)/functions/v1/delete-account") else {
+            throw SupabaseAuthError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.httpBody = Data("{}".utf8)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let message = (json?["error"] as? String) ?? "Couldn't delete your account. Check your connection and try again."
+            throw SupabaseAuthError.requestFailed(message)
+        }
+    }
+
     static func signOut(accessToken: String) async {
         guard let url = URL(string: "\(authBaseURL)/logout") else { return }
         var request = URLRequest(url: url)

@@ -129,7 +129,7 @@ enum WeatherService {
                 // failure here (network, decode, schema change) still falls
                 // through to historical, but is logged so a systematic forecast
                 // outage doesn't go unnoticed indefinitely.
-                print("Packed: live forecast fetch failed for \(place.name), falling back to historical average: \(error)")
+                Log.weather.error("Forecast fetch failed, falling back to historical average: \(error.localizedDescription, privacy: .public)")
             }
         }
 
@@ -141,13 +141,7 @@ enum WeatherService {
         return try await fetchHistoricalAverage(for: place, month: month, day: day)
     }
 
-    /// Fetches the live forecast for a destination on a specific upcoming date.
-    static func fetchForecast(destination: String, date: Date) async throws -> HistoricalWeatherSummary {
-        let place = try await geocode(place: destination)
-        return try await fetchForecast(for: place, date: date)
-    }
-
-    /// Same as above, but for a location that has already been geocoded.
+    /// Fetches the live forecast for an already-geocoded location on a specific upcoming date.
     static func fetchForecast(for place: GeocodedPlace, date: Date) async throws -> HistoricalWeatherSummary {
         let calendar = Calendar(identifier: .gregorian)
         let comps = calendar.dateComponents([.year, .month, .day], from: date)
@@ -220,29 +214,9 @@ enum WeatherService {
         return GeocodedPlace(name: first.name, latitude: first.latitude, longitude: first.longitude)
     }
 
-    /// Computes the historical average weather for a destination on a given
-    /// calendar date, by averaging observed data for that month/day across the
-    /// past several years.
-    static func fetchHistoricalAverage(
-        destination: String,
-        date: Date,
-        yearsOfHistory: Int = defaultYearsOfHistory
-    ) async throws -> HistoricalWeatherSummary {
-        let place = try await geocode(place: destination)
-        let calendar = Calendar(identifier: .gregorian)
-        let comps = calendar.dateComponents([.month, .day], from: date)
-        guard let month = comps.month, let day = comps.day else {
-            throw WeatherServiceError.invalidResponse
-        }
-        return try await fetchHistoricalAverage(
-            for: place,
-            month: month,
-            day: day,
-            yearsOfHistory: yearsOfHistory
-        )
-    }
-
-    /// Same as above, but for a location that has already been geocoded.
+    /// Computes the historical average weather for an already-geocoded
+    /// location on a given calendar day, by averaging observed data for that
+    /// month/day across the past several years.
     static func fetchHistoricalAverage(
         for place: GeocodedPlace,
         month: Int,

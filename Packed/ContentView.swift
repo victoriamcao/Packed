@@ -15,7 +15,7 @@ struct ContentView: View {
                 .navigationDestination(for: AppDestination.self) { destination in
                     switch destination {
                     case .survey:
-                        SurveryPage(savedLists: savedLists)
+                        SurveyPage(savedLists: savedLists)
                     case .pastLists:
                         PastLists(savedLists: savedLists)
                     case .map:
@@ -55,6 +55,10 @@ struct ContentView: View {
         .onChange(of: userData.isLoggedIn) { _, isLoggedIn in
             if isLoggedIn {
                 Task { await loadHomeDataIfNeeded() }
+            } else {
+                // Don't leave the previous account's lists on screen.
+                savedLists.lists = []
+                savedLists.errorMessage = nil
             }
         }
     }
@@ -83,6 +87,7 @@ struct ContentView: View {
                     .fontWeight(.medium)
                     .foregroundColor(Color("darkBlue"))
                     .padding(.top, 24)
+                    .accessibilityAddTraits(.isHeader)
 
                 upcomingTripsSection
 
@@ -93,20 +98,20 @@ struct ContentView: View {
                         Text("Create Packing List")
                             .font(.title2)
                             .foregroundColor(Color.white)
+                            .frame(maxWidth: 350, minHeight: 70)
+                            .background(Color("lightBlue"))
+                            .cornerRadius(24)
                     }
-                    .frame(maxWidth: 350, minHeight: 70)
-                    .background(Color("lightBlue"))
-                    .cornerRadius(24)
 
                     Button {
                         navigator.push(.pastLists)
                     } label: {
                         Text("View Past Lists")
                             .foregroundColor(Color("textGray"))
+                            .frame(maxWidth: 350, minHeight: 46)
+                            .background(Color("buttonGray"))
+                            .cornerRadius(18)
                     }
-                    .frame(maxWidth: 350, minHeight: 46)
-                    .background(Color("buttonGray"))
-                    .cornerRadius(18)
                 }
 
                 Spacer(minLength: 0)
@@ -117,6 +122,7 @@ struct ContentView: View {
                     .frame(width: 220)
                     .rotationEffect(.degrees(-8))
                     .opacity(0.9)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal)
             .padding(.bottom, 74)
@@ -137,6 +143,17 @@ struct ContentView: View {
 
             if !userData.isLoggedIn {
                 emptyStateRow(icon: "airplane", message: "Log in to see your upcoming trips")
+            } else if savedLists.lists.isEmpty && savedLists.errorMessage != nil {
+                // Don't show "no trips yet" when we just couldn't load them.
+                Button {
+                    Task { await loadHomeDataIfNeeded() }
+                } label: {
+                    emptyStateRow(icon: "wifi.exclamationmark", message: "Couldn't load your trips. Tap to try again.")
+                }
+                .buttonStyle(.plain)
+            } else if upcomingTrips.isEmpty && !savedLists.hasLoaded {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 50)
             } else if upcomingTrips.isEmpty {
                 emptyStateRow(icon: "airplane.departure", message: "No upcoming trips yet - create one below!")
             } else {
@@ -187,10 +204,13 @@ struct ContentView: View {
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundColor(Color("textGray"))
+                .accessibilityHidden(true)
         }
         .padding(12)
         .background(Color("buttonGray"))
         .cornerRadius(12)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(trip.title), \(relativeDayLabel(trip.travelDate)), \(trip.items.count) items")
     }
 
     private func emptyStateRow(icon: String, message: String) -> some View {
@@ -198,6 +218,7 @@ struct ContentView: View {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundColor(Color("lightBlue"))
+                .accessibilityHidden(true)
             Text(message)
                 .font(.subheadline)
                 .foregroundColor(Color("textGray"))

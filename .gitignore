@@ -1,0 +1,13 @@
+# Your Supabase project URL + anon key (see Config/SupabaseSecrets.example.plist)
+Packed/SupabaseSecrets.plist
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+.DS_Store
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/

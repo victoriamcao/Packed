@@ -14,6 +14,7 @@ struct LoginFormView: View {
     @State private var password = ""
     @State private var errorMessage = ""
     @State private var isLoggingIn = false
+    @State private var showingForgotPassword = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -21,17 +22,30 @@ struct LoginFormView: View {
                 Text("Log In")
                     .font(.largeTitle)
                     .bold()
+                    .accessibilityAddTraits(.isHeader)
 
                 TextField("Email", text: $email)
                     .textFieldStyle(.roundedBorder)
                     .padding(.horizontal)
                     .keyboardType(.emailAddress)
-                    .autocapitalization(.none)
+                    .textContentType(.username)
+                    .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
 
                 SecureField("Password", text: $password)
                     .textFieldStyle(.roundedBorder)
+                    .textContentType(.password)
                     .padding(.horizontal)
+
+                HStack {
+                    Spacer()
+                    Button("Forgot password?") {
+                        showingForgotPassword = true
+                    }
+                    .font(.footnote)
+                    .foregroundColor(Color.lightBlue)
+                }
+                .padding(.horizontal)
 
                 if !errorMessage.isEmpty {
                     Text(errorMessage)
@@ -42,7 +56,7 @@ struct LoginFormView: View {
                 Button(action: loginUser) {
                     Text(isLoggingIn ? "Logging In..." : "Log In")
                         .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(!email.isEmpty && !password.isEmpty ? Color.blue : Color.gray)
+                        .background(!email.isEmpty && !password.isEmpty ? Color.lightBlue : Color.gray)
                         .foregroundColor(.white)
                         .cornerRadius(10)
                         .padding(.horizontal)
@@ -54,10 +68,11 @@ struct LoginFormView: View {
                 } label: {
                     HStack {
                         Text("Don't have an account? Sign up")
-                            .foregroundColor(Color.blue)
+                            .foregroundColor(Color.lightBlue)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 16))
-                            .foregroundColor(.blue)
+                            .font(.callout)
+                            .foregroundColor(Color.lightBlue)
+                            .accessibilityHidden(true)
                     }
                 }
             }
@@ -68,6 +83,11 @@ struct LoginFormView: View {
             BottomNavBar(current: .profile)
         }
         .background(Color("appBackground").ignoresSafeArea())
+        .sheet(isPresented: $showingForgotPassword) {
+            ForgotPasswordView(userData: userData, initialEmail: email) {
+                navigator.go(to: .profile)
+            }
+        }
     }
 
     private func loginUser() {
@@ -75,7 +95,7 @@ struct LoginFormView: View {
         isLoggingIn = true
         Task {
             do {
-                try await userData.login(email: email, password: password)
+                try await userData.login(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
                 navigator.go(to: .profile)
             } catch {
                 errorMessage = error.localizedDescription

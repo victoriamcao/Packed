@@ -6,11 +6,15 @@
 //  user, with a graceful fallback (map still fully usable for manually
 //  dropping photo pins) if permission is denied or restricted.
 //
+//  Main-actor isolated: the delegate callbacks are nonisolated and hop
+//  back to the main actor before touching @Published state.
+//
 
 import Foundation
 import CoreLocation
 import Combine
 
+@MainActor
 final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published private(set) var authorizationStatus: CLAuthorizationStatus
     @Published private(set) var userLocation: CLLocationCoordinate2D?
@@ -36,18 +40,26 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
         }
     }
 
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        authorizationStatus = manager.authorizationStatus
-        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        if status == .authorizedWhenInUse || status == .authorizedAlways {
             manager.requestLocation()
+        }
+        Task { @MainActor in
+            self.authorizationStatus = status
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        userLocation = locations.last?.coordinate
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let coordinate = locations.last?.coordinate else { return }
+        let latitude = coordinate.latitude
+        let longitude = coordinate.longitude
+        Task { @MainActor in
+            self.userLocation = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+        }
     }
 
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         // Leave userLocation nil - the map falls back to its default region.
     }
 }

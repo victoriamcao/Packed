@@ -10,33 +10,37 @@ import SwiftUI
 struct LoginChoiceView: View {
     @ObservedObject var userData: UserData
     @EnvironmentObject var navigator: AppNavigator
-    @State private var isHoveringLogin = false
-    @State private var isHoveringSignup = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 20) {
                 Image("logo")
                     .resizable()
-                    .frame(width: 200, height: 200)
+                    .scaledToFit()
+                    .frame(maxWidth: 200, maxHeight: 200)
+                    .accessibilityLabel("Packed logo")
 
                 Text("Join us!")
                     .font(.largeTitle)
                     .bold()
                     .padding()
+                    .accessibilityAddTraits(.isHeader)
+
+                Text("Save your lists, get AI-personalized packing lists, and pin trip photos to your map.")
+                    .font(.subheadline)
+                    .foregroundColor(Color.textGray)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
 
                 Button {
                     navigator.push(.login)
                 } label: {
                     Text("Log in")
                         .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(isHoveringLogin ? Color.lightBlue.opacity(90) : Color.lightBlue)
+                        .background(Color.lightBlue)
                         .foregroundColor(.white)
                         .cornerRadius(10)
                         .padding(.horizontal)
-                }
-                .onHover { hovering in
-                    isHoveringLogin = hovering
                 }
 
                 Button {
@@ -48,10 +52,6 @@ struct LoginChoiceView: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                         .padding(.horizontal)
-                        .opacity(isHoveringSignup ? 0.9 : 1.0)
-                }
-                .onHover { hovering in
-                    isHoveringSignup = hovering
                 }
             }
             .padding()

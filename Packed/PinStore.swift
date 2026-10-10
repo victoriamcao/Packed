@@ -50,25 +50,47 @@ enum PinStore {
         request.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw PinStoreError.requestFailed("Couldn't load your map pins.")
+        }
         let remotePins = try JSONDecoder().decode([RemotePin].self, from: data)
 
-        var pins: [Pin] = []
-        for remote in remotePins {
-            var images: [UIImage] = []
-            for path in remote.photoPaths {
-                if let image = try? await downloadPhoto(path: path, accessToken: accessToken) {
-                    images.append(image)
+        // Fetch every photo in parallel (from the on-disk cache when we
+        // already have it) instead of one at a time.
+        let allPaths = Set(remotePins.flatMap(\.photoPaths))
+        var photoData: [String: Data] = [:]
+        await withTaskGroup(of: (String, Data?).self) { group in
+            for path in allPaths {
+                group.addTask {
+                    (path, try? await photoBytes(path: path, accessToken: accessToken))
                 }
             }
-            pins.append(Pin(
+            for await (path, bytes) in group {
+                if let bytes { photoData[path] = bytes }
+            }
+        }
+
+        return remotePins.map { remote in
+            // images/imagePaths stay parallel (only photos that actually
+            // loaded); photoPaths stays the full server list.
+            let loadedPaths = remote.photoPaths.filter { photoData[$0] != nil }
+            var images: [UIImage] = []
+            var imagePaths: [String] = []
+            for path in loadedPaths {
+                if let bytes = photoData[path], let image = PhotoCache.downsampledImage(from: bytes) {
+                    images.append(image)
+                    imagePaths.append(path)
+                }
+            }
+            return Pin(
                 id: remote.id,
                 coordinate: CLLocationCoordinate2D(latitude: remote.latitude, longitude: remote.longitude),
                 images: images,
+                imagePaths: imagePaths,
                 photoPaths: remote.photoPaths
-            ))
+            )
         }
-        return pins
     }
 
     /// Creates a new pin row at the given coordinate (no photos yet).
@@ -101,32 +123,60 @@ enum PinStore {
         return Pin(id: first.id, coordinate: coordinate)
     }
 
-    /// Uploads a photo to Storage and appends it to the pin's photo list.
-    static func addPhoto(_ image: UIImage, to pin: Pin, userId: String, accessToken: String) async throws {
+    /// Uploads a photo to Storage and appends it to the pin's photo list
+    /// on the server. Returns the pin's new list of photo paths; the caller
+    /// updates the Pin itself on the main actor.
+    ///
+    /// If saving the new path to the pin fails after the upload succeeded,
+    /// the uploaded file is deleted again so it isn't orphaned in Storage.
+    static func addPhoto(_ image: UIImage, to pin: Pin, userId: String, accessToken: String) async throws -> [String] {
         guard let jpegData = image.jpegData(compressionQuality: 0.85) else {
             throw PinStoreError.requestFailed("Couldn't process the photo.")
         }
 
-        let path = "\(userId)/\(pin.id)_\(pin.photoPaths.count)_\(Int(Date().timeIntervalSince1970)).jpg"
+        let existingPaths = pin.photoPaths
+        let path = "\(userId)/\(pin.id)_\(UUID().uuidString).jpg"
         try await uploadPhoto(data: jpegData, path: path, accessToken: accessToken)
 
-        let updatedPaths = pin.photoPaths + [path]
-        try await updatePhotoPaths(pinId: pin.id, photoPaths: updatedPaths, accessToken: accessToken)
-
-        pin.photoPaths = updatedPaths
-        pin.images.append(image)
+        let updatedPaths = existingPaths + [path]
+        do {
+            try await updatePhotoPaths(pinId: pin.id, photoPaths: updatedPaths, accessToken: accessToken)
+        } catch {
+            Log.map.error("Saving photo path failed, removing the uploaded file")
+            await deletePhoto(path: path, accessToken: accessToken)
+            throw error
+        }
+        PhotoCache.write(jpegData, for: path)
+        return updatedPaths
     }
 
-    static func deletePin(_ pin: Pin, accessToken: String) async {
-        for path in pin.photoPaths {
-            await deletePhoto(path: path, accessToken: accessToken)
+    /// Deletes the pin row first (so a failure never leaves a pin without
+    /// its photos), then its photos from Storage and the local cache.
+    static func deletePin(_ pin: Pin, accessToken: String) async throws {
+        let photoPaths = pin.photoPaths
+        guard let url = URL(string: "\(SupabaseConfig.projectURL)/rest/v1/map_pins?id=eq.\(pin.id)") else {
+            throw PinStoreError.requestFailed("Invalid URL.")
         }
-        guard let url = URL(string: "\(SupabaseConfig.projectURL)/rest/v1/map_pins?id=eq.\(pin.id)") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        _ = try? await URLSession.shared.data(for: request)
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw PinStoreError.requestFailed("Couldn't delete the pin.")
+        }
+
+        for path in photoPaths {
+            await deletePhoto(path: path, accessToken: accessToken)
+        }
+    }
+
+    /// Removes one photo from a pin. Returns the pin's remaining photo paths.
+    static func removePhoto(path: String, from pin: Pin, accessToken: String) async throws -> [String] {
+        let remaining = pin.photoPaths.filter { $0 != path }
+        try await updatePhotoPaths(pinId: pin.id, photoPaths: remaining, accessToken: accessToken)
+        await deletePhoto(path: path, accessToken: accessToken)
+        return remaining
     }
 
     // MARK: - Storage
@@ -148,7 +198,13 @@ enum PinStore {
         }
     }
 
-    private static func downloadPhoto(path: String, accessToken: String) async throws -> UIImage? {
+    /// A photo's bytes, from the on-disk cache if we have them, otherwise
+    /// downloaded (and then cached) - so reopening the map doesn't
+    /// re-download every photo.
+    private static func photoBytes(path: String, accessToken: String) async throws -> Data? {
+        if let cached = PhotoCache.read(path) {
+            return cached
+        }
         guard let url = URL(string: "\(SupabaseConfig.projectURL)/storage/v1/object/map-photos/\(path)") else {
             return nil
         }
@@ -156,11 +212,16 @@ enum PinStore {
         request.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return UIImage(data: data)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            return nil
+        }
+        PhotoCache.write(data, for: path)
+        return data
     }
 
     private static func deletePhoto(path: String, accessToken: String) async {
+        PhotoCache.remove(path)
         guard let url = URL(string: "\(SupabaseConfig.projectURL)/storage/v1/object/map-photos/\(path)") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
