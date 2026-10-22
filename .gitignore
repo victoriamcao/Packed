@@ -11,3 +11,6 @@ build/
 # Supabase CLI local state
 supabase/.temp/
 supabase/.branches/
+
+# Cached Open-Meteo API responses (regenerate with scripts/weather_backtest.py)
+scripts/weather_cache/
