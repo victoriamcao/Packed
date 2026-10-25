@@ -22,19 +22,23 @@ supabase login
 supabase link --project-ref YOUR_PROJECT_REF
 ```
 
-## 3. Run the database migration
-
-Either paste `supabase/migrations/20261007000000_sharing_and_ai_limits.sql`
-into the **SQL Editor** and run it, or:
+## 3. Run the database migrations
 
 ```sh
 supabase db push
 ```
 
-This adds list sharing (`list_shares` + a few functions) and the
-`ai_generations` table used to cap AI usage. It also makes usernames
-unique, case-insensitive. If that last part fails, you have duplicate
-usernames in `profiles`; fix them and re-run.
+This runs both migrations in order (or paste each into the **SQL Editor**
+and run them in order if you'd rather not use the CLI):
+
+- `20260901000000_base_schema.sql` creates the tables the app talks to
+  directly (`profiles`, `packing_lists`, `map_pins`), their row-level
+  security policies, and the private `map-photos` storage bucket.
+- `20261007000000_sharing_and_ai_limits.sql` adds list sharing
+  (`list_shares` + a few functions) and the `ai_generations` table used
+  to cap AI usage, and makes usernames unique, case-insensitive. If that
+  last part fails, you have duplicate usernames in `profiles`; fix them
+  and re-run.
 
 ## 4. Deploy the account-deletion function (App Store requirement)
 
