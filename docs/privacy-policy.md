@@ -5,9 +5,9 @@ permalink: /privacy-policy
 
 # Packed Privacy Policy
 
-**Effective date:** [DATE YOU PUBLISH THIS]
+**Effective date:** 10/26/26
 
-Packed is a packing-list app made by [YOUR NAME]. This policy explains what
+Packed is a packing-list app made by Dhriti Burugupalli, Samshi Chinthireddy, Vivian Li, and Victoria Cao. This policy explains what
 information Packed collects, why, and what you can do about it. The short
 version: Packed only collects what it needs to work, never sells your data,
 never shows ads, and never tracks you across other apps or websites.
@@ -84,4 +84,4 @@ effective date.
 
 ## Contact
 
-Questions? Email [YOUR CONTACT EMAIL].
+Questions? Email packedappcontact@gmail.com.
