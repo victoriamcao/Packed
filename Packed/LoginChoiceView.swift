@@ -61,6 +61,7 @@ struct LoginChoiceView: View {
             BottomNavBar(current: .profile)
         }
         .background(Color("appBackground").ignoresSafeArea())
+        .navigationBarBackButtonHidden(true)
     }
 }
 

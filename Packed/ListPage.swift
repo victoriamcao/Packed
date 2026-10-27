@@ -19,6 +19,7 @@ struct ListPage: View {
     @State private var showLoginPrompt = false
     @State private var saveErrorMessage: String?
     @State private var isSaving = false
+    @State private var hasSaved = false
     @State private var vacationName: String = ""
     @State private var newItem: String = ""
     @State private var items: [PackingItem] = []
@@ -29,8 +30,6 @@ struct ListPage: View {
     @State private var isGeneratingList: Bool = false
     @State private var usedAIGeneration: Bool = false
     @State private var aiNotice: String?
-    
-    @Environment(\.dismiss) var dismiss
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -119,13 +118,13 @@ struct ListPage: View {
                             )
                             isSaving = false
                             if didSave {
-                                dismiss() // Dismiss the view and go back to the home screen
+                                hasSaved = true
                             } else {
                                 saveErrorMessage = savedLists.errorMessage ?? "Couldn't save your list. Check your connection and try again."
                             }
                         }
                     }) {
-                        Text(isSaving ? "Saving..." : "Save List")
+                        Text(isSaving ? "Saving..." : (hasSaved ? "Saved" : "Save List"))
                             .font(.headline)
                             .padding(.vertical, 14)
                             .frame(maxWidth: .infinity)
@@ -134,7 +133,7 @@ struct ListPage: View {
                             .cornerRadius(12)
                             .padding(.horizontal)
                     }
-                    .disabled(isSaving)
+                    .disabled(isSaving || hasSaved)
                     .padding(.top, 10)
                 }
                 .padding(.bottom, 20)

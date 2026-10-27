@@ -23,42 +23,37 @@ struct PackingItemsListView: View {
 
         List {
             ForEach(categories, id: \.self) { category in
-                Section {
-                    ForEach(grouped[category] ?? []) { $item in
-                        row(for: $item)
-                            .listRowBackground(Color("buttonGray"))
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    delete(item.id)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
+                Text(category)
+                    .font(.title3)
+                    .bold()
+                    .foregroundColor(Color("lightBlue"))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 16)
+                    .listRowBackground(Color("appBackground"))
+                    .listRowSeparator(.hidden)
+                    .accessibilityAddTraits(.isHeader)
+
+                ForEach(grouped[category] ?? []) { $item in
+                    row(for: $item)
+                        .listRowBackground(Color("appBackground"))
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                delete(item.id)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
-                    }
-                    .onMove { source, destination in
-                        move(in: category, from: source, to: destination)
-                    }
-                } header: {
-                    Text(category)
-                        .font(.title3)
-                        .bold()
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 16)
-                        .background(Color("lightBlue"))
-                        .cornerRadius(10)
-                        .padding(.top, 8)
-                        .textCase(nil)
-                        .accessibilityAddTraits(.isHeader)
+                        }
+                }
+                .onMove { source, destination in
+                    move(in: category, from: source, to: destination)
                 }
                 .listRowSeparator(.hidden)
-                .listSectionSeparator(.hidden)
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .background(Color("appBackground"))
     }
 
     private func row(for item: Binding<PackingItem>) -> some View {

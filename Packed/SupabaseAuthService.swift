@@ -12,6 +12,7 @@ import Foundation
 enum SupabaseAuthError: LocalizedError {
     case invalidResponse
     case requestFailed(String)
+    case confirmationRequired
 
     var errorDescription: String? {
         switch self {
@@ -19,6 +20,8 @@ enum SupabaseAuthError: LocalizedError {
             return "Unexpected response from the server."
         case .requestFailed(let message):
             return message
+        case .confirmationRequired:
+            return "Account created! Check your email for a confirmation link, then log in."
         }
     }
 }
@@ -136,6 +139,13 @@ enum SupabaseAuthService {
                 ?? (json["message"] as? String)
                 ?? "Request failed."
             throw SupabaseAuthError.requestFailed(message)
+        }
+
+        // A successful signup with "Confirm email" turned on returns the new
+        // user but no session - there's nothing to log in with until the
+        // user clicks the emailed confirmation link.
+        if json["access_token"] == nil, path == "signup" {
+            throw SupabaseAuthError.confirmationRequired
         }
 
         guard let accessToken = json["access_token"] as? String,

@@ -9,6 +9,6 @@
 import Foundation
 
 enum AppLinks {
-    static let privacyPolicy = URL(string: "https://dhritiburugupalli.github.io/Packed/privacy-policy")
+    static let privacyPolicy = URL(string: "https://victoriamcao.github.io/Packed/privacy-policy")
         ?? URL(fileURLWithPath: "/")
 }

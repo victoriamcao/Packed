@@ -19,7 +19,7 @@ AI lists, password reset email) is in [`supabase/README.md`](supabase/README.md)
 
 - Publish `docs/privacy-policy.md` (fill in the bracketed parts first). With
   GitHub Pages on for the `docs/` folder, it lives at
-  `https://dhritiburugupalli.github.io/Packed/privacy-policy`, which is what
+  `https://victoriamcao.github.io/Packed/privacy-policy`, which is what
   `Packed/AppLinks.swift` points to. Put the same URL in App Store Connect.
 - Fill in the App Store Connect privacy questionnaire to match
   `Packed/PrivacyInfo.xcprivacy`: Contact Info (email, name), Identifiers

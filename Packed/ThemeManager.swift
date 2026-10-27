@@ -44,7 +44,7 @@ final class ThemeManager: ObservableObject {
 
     init() {
         let saved = UserDefaults.standard.string(forKey: Self.storageKey)
-        preference = saved.flatMap(AppColorScheme.init(rawValue:)) ?? .system
+        preference = saved.flatMap(AppColorScheme.init(rawValue:)) ?? .light
     }
 
     /// nil lets SwiftUI (and the OS) drive appearance from the device setting.

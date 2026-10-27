@@ -25,9 +25,15 @@ struct SurveyPage: View {
     // being read as setting an end date against a pre-seeded start.
     @State private var tripStartDate: Date?
     @State private var tripEndDate: Date?
+    @State private var isCheckingDestination = false
+    @State private var destinationErrorMessage: String?
     @ObservedObject var savedLists: SavedLists
 
     private var resolvedStartDate: Date { tripStartDate ?? Date() }
+
+    private var trimmedDestination: String {
+        destination.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     private var tripLengthDays: Int {
         guard let start = tripStartDate else { return 1 }
@@ -72,7 +78,7 @@ struct SurveyPage: View {
             VStack(spacing: 6) {
                 HStack {
                     Button {
-                        navigator.goBack()
+                        navigator.goHome()
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
@@ -150,23 +156,25 @@ struct SurveyPage: View {
                 )
 
                 Button {
-                    navigator.push(.listPage(ListPageParams(
-                        selectedType: selectedType,
-                        selectedGender: selectedGender,
-                        selectedWeather: fallbackWeatherLabel,
-                        selectedLength: tripLengthDays,
-                        destination: destination,
-                        travelDate: resolvedStartDate
-                    )))
+                    createList()
                 } label: {
-                    Text("Create")
+                    Text(isCheckingDestination ? "Checking destination..." : "Create")
                         .font(.title3)
                         .foregroundColor(Color.white)
                         .frame(maxWidth: 350, minHeight: 46)
-                        .background(Color("lightBlue"))
+                        .background(trimmedDestination.isEmpty ? Color.gray : Color("lightBlue"))
                         .cornerRadius(10)
                 }
+                .disabled(trimmedDestination.isEmpty || isCheckingDestination)
                 .padding(.top, 10)
+
+                if trimmedDestination.isEmpty {
+                    Text("Enter a destination so your list can be based on real weather there.")
+                        .font(.caption)
+                        .foregroundColor(Color.textGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 4)
+                }
 
                 Text(userData.isLoggedIn
                      ? "✨ Your list will be AI-personalized for your destination and weather."
@@ -185,6 +193,38 @@ struct SurveyPage: View {
         }
         .background(Color("appBackground").ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
+        .alert("Couldn't find that destination", isPresented: Binding(
+            get: { destinationErrorMessage != nil },
+            set: { if !$0 { destinationErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(destinationErrorMessage ?? "")
+        }
+    }
+
+    /// Confirms the destination actually resolves to a real place before
+    /// moving on, so the packing list is always built from real weather
+    /// instead of silently falling back to the trip-type guess.
+    private func createList() {
+        isCheckingDestination = true
+        Task {
+            do {
+                _ = try await WeatherService.geocode(place: trimmedDestination)
+                isCheckingDestination = false
+                navigator.push(.listPage(ListPageParams(
+                    selectedType: selectedType,
+                    selectedGender: selectedGender,
+                    selectedWeather: fallbackWeatherLabel,
+                    selectedLength: tripLengthDays,
+                    destination: trimmedDestination,
+                    travelDate: resolvedStartDate
+                )))
+            } catch {
+                isCheckingDestination = false
+                destinationErrorMessage = "Couldn't find \"\(trimmedDestination)\". Check the spelling and try again."
+            }
+        }
     }
 }
 

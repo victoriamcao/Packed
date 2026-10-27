@@ -146,6 +146,7 @@ struct ProfileView: View {
             BottomNavBar(current: .profile)
         }
         .background(Color("appBackground").ignoresSafeArea())
+        .navigationBarBackButtonHidden(true)
     }
 
     private func deleteAccount() async {

@@ -104,8 +104,8 @@ enum WeatherService {
     private static let forecastEndpoint = "https://api.open-meteo.com/v1/forecast"
 
     /// How many past years to sample when computing the historical average.
-    /// 10 years is a reasonable trade-off between accuracy and request volume.
-    private static let defaultYearsOfHistory = 10
+    /// 15 years is a reasonable trade-off between accuracy and request volume.
+    private static let defaultYearsOfHistory = 15
 
     /// Open-Meteo's free forecast API only covers roughly the next two weeks.
     /// Beyond that we fall back to the historical average instead.

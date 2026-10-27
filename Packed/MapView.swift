@@ -18,6 +18,11 @@ struct MapView: UIViewRepresentable {
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
         mapView.showsUserLocation = true
+        // Explicit, since these drive how freely people can explore the
+        // map - pinch to any zoom level, pan anywhere in the world.
+        mapView.isZoomEnabled = true
+        mapView.isScrollEnabled = true
+        mapView.cameraZoomRange = nil
 
         let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap))
         tapGesture.delegate = context.coordinator

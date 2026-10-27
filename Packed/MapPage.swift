@@ -14,7 +14,6 @@ struct MapPage: View {
     @State private var pendingCoordinate: CLLocationCoordinate2D?
     @State private var pickedPhoto: PickedPhoto?
     @State private var showingImagePicker = false
-    @State private var showingConfirmImage = false
     @State private var selectedPinForPreview: Pin?
     @State private var isSavingPhoto = false
     @State private var errorMessage: String?
@@ -87,43 +86,6 @@ struct MapPage: View {
         .sheet(isPresented: $showingImagePicker) {
             ImagePicker(pickedPhoto: $pickedPhoto)
         }
-        .sheet(isPresented: $showingConfirmImage) {
-            if let photo = pickedPhoto {
-                ZStack {
-                    Color("appBackground").ignoresSafeArea()
-
-                    VStack {
-                        Text("Confirm your photo")
-                            .font(.headline)
-                            .padding()
-
-                        Image(uiImage: photo.image)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 300)
-                            .padding()
-
-                        HStack {
-                            Button("Cancel") {
-                                pickedPhoto = nil
-                                pendingCoordinate = nil
-                                showingConfirmImage = false
-                            }
-                            .padding()
-
-                            Spacer()
-
-                            Button("Confirm") {
-                                showingConfirmImage = false
-                                addPinWithPendingPhoto()
-                            }
-                            .padding()
-                        }
-                        .padding(.horizontal)
-                    }
-                }
-            }
-        }
         .fullScreenCover(item: $selectedPinForPreview) { pin in
             PhotoDetailView(
                 pin: pin,
@@ -146,12 +108,12 @@ struct MapPage: View {
 
             if pendingCoordinate != nil {
                 // User already chose a location (tapped the map first).
-                showingConfirmImage = true
+                addPinWithPendingPhoto()
             } else if let geotag = newValue.coordinate {
                 // No location chosen yet, but the photo carries its own GPS EXIF - auto-place it.
                 pendingCoordinate = geotag
                 centerOnCoordinate = geotag
-                showingConfirmImage = true
+                addPinWithPendingPhoto()
             } else {
                 // No location chosen and no EXIF geotag - ask the user to tap the map.
                 photoAwaitingPlacement = newValue
@@ -187,6 +149,7 @@ struct MapPage: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .navigationBarBackButtonHidden(true)
     }
 
     private func requireLogin() -> Bool {
@@ -215,7 +178,6 @@ struct MapPage: View {
             pendingCoordinate = coordinate
             pickedPhoto = awaitingPhoto
             photoAwaitingPlacement = nil
-            showingConfirmImage = true
             return
         }
 

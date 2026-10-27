@@ -39,7 +39,7 @@ enum ClaudePackingListError: LocalizedError {
 enum ClaudePackingListService {
 
     private static let endpoint = "https://api.anthropic.com/v1/messages"
-    private static let model = "claude-sonnet-5-5"
+    private static let model = "claude-sonnet-5"
     private static let toolName = "record_packing_list"
 
     static func generatePackingList(
